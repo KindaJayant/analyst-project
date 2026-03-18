@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔬 ResearchAgent — AI-Powered Autonomous Company Research
 
-## Getting Started
+An AI-powered web app where you enter any company name and an autonomous agent researches it from scratch — browsing the web, pulling financial data, reading news, and generating a structured investment/competitive brief.
 
-First, run the development server:
+**Zero paid APIs.** The Gemini API key (free tier) is the only credential needed.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 (App Router) + TypeScript |
+| Styling | Tailwind CSS + shadcn/ui |
+| LLM | Google Gemini 2.0 Flash via OpenRouter (`openrouter.ai`) |
+| Financial Data | `yahoo-finance2` (no API key) |
+| Web Search | `duck-duck-scrape` (no API key) |
+| News | Google News RSS via `rss-parser` |
+| Hosting | Vercel (free tier, zero config) |
+
+---
+
+## 🚀 Run Locally
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/KindaJayant/analyst-project.git
+cd analyst-project
+
+# 2. Install dependencies
+npm install
+
+# 3. Add your OpenRouter API key
+cp .env.local.example .env.local
+# Edit .env.local and add your key from https://openrouter.ai/keys
+
+# 4. Run the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and enter a company name to start.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🤖 How the Agent Works
 
-## Learn More
+The agent follows an autonomous **Plan → Act → Observe → Reflect → Synthesize** loop:
 
-To learn more about Next.js, take a look at the following resources:
+1. **Plan** — Given a company name, Gemini generates a multi-step research plan
+2. **Act** — The agent calls the appropriate tool for each step (web search, financial data, or news)
+3. **Observe** — It reads and processes the tool output
+4. **Reflect** — It decides if results are sufficient or if it needs to retry with a different query
+5. **Repeat** — Until all research is complete
+6. **Synthesize** — Gemini compiles everything into a structured 6-section report
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If a tool fails or returns empty results, the agent **self-corrects** by retrying with a different query.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Tools Available
 
-## Deploy on Vercel
+| Tool | Source | Purpose |
+|------|--------|---------|
+| 🔍 Search | DuckDuckGo | Company overview, competitors, general research |
+| 📊 Financials | Yahoo Finance | Price, market cap, P/E, revenue, margins |
+| 📰 News | Google News RSS | Latest headlines and developments |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Final Report Sections
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. 🏢 Company Overview
+2. 📊 Financial Snapshot
+3. 📰 Recent News & Developments
+4. ⚔️ Competitive Landscape
+5. ⚠️ Risk Factors
+6. 💡 Investment/Opportunity Summary (with Bull/Bear case and sentiment)
+
+---
+
+## 📋 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENROUTER_API_KEY` | ✅ | Your OpenRouter API key ([get one](https://openrouter.ai/keys)) |
+
+---
+
+## ⚡ Free Tier Limits
+
+- **OpenRouter**: Rate limits depend on your plan and the model used
+- **Yahoo Finance**: No official rate limit, but don't hammer it
+- **DuckDuckGo**: Unofficial scraping, may rate-limit under heavy use
+- **Google News RSS**: Public RSS, very generous limits
+
+**Tip:** Each company analysis uses ~6-10 LLM calls. You can comfortably analyze ~100+ companies per day on the free tier.
+
+---
+
+## 🚀 Deploy to Vercel
+
+1. Push to GitHub
+2. Import the repo on [vercel.com](https://vercel.com)
+3. Add `OPENROUTER_API_KEY` as an environment variable
+4. Deploy — zero config changes needed
+
+---
+
+## 📸 Demo
+
+<!-- Add a screenshot here -->
+*Screenshot placeholder — run the app and capture the report view!*
+
+---
+
+## 📄 License
+
+MIT
