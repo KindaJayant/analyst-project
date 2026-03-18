@@ -1,65 +1,88 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function Home() {
+  const [company, setCompany] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = company.trim();
+    if (trimmed) {
+      router.push(`/report/${encodeURIComponent(trimmed)}`);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[oklch(0.7_0.15_250_/_6%)] blur-[120px]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[oklch(0.7_0.18_320_/_5%)] blur-[100px]"></div>
+      </div>
+
+      <div className="relative z-10 max-w-2xl w-full text-center space-y-8">
+        {/* Logo / Title */}
+        <div className="space-y-4">
+          <div className="text-5xl mb-2">🔬</div>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            <span className="gradient-text">ResearchAgent</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Enter any company name and let our AI agent research it autonomously
+            — pulling financial data, news, and competitive intelligence.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Input Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
+        >
+          <Input
+            id="company-input"
+            type="text"
+            placeholder="e.g. Apple, Tesla, Infosys..."
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className="flex-1 h-12 text-base bg-[oklch(0.17_0.015_270_/_80%)] border-border/50 placeholder:text-muted-foreground/50 focus:border-[oklch(0.7_0.15_250_/_60%)] focus:ring-[oklch(0.7_0.15_250_/_20%)] transition-all"
+          />
+          <Button
+            type="submit"
+            disabled={!company.trim()}
+            className="h-12 px-8 text-base font-semibold bg-[oklch(0.7_0.15_250)] hover:bg-[oklch(0.65_0.17_250)] text-[oklch(0.13_0.015_270)] transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            🚀 Analyze
+          </Button>
+        </form>
+
+        {/* Feature badges */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+          {[
+            { emoji: "🔍", label: "Web Research" },
+            { emoji: "📊", label: "Financial Data" },
+            { emoji: "📰", label: "Live News" },
+            { emoji: "🤖", label: "AI Analysis" },
+          ].map((feature) => (
+            <div
+              key={feature.label}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[oklch(0.22_0.02_270_/_60%)] text-muted-foreground border border-border/30"
+            >
+              <span>{feature.emoji}</span>
+              {feature.label}
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
+
+        {/* Footer */}
+        <p className="text-xs text-muted-foreground/50 pt-8">
+          Powered by Gemini AI • All data fetched live • Zero paid APIs
+        </p>
+      </div>
+    </main>
   );
 }
