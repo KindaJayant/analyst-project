@@ -38,6 +38,62 @@ const MOCK_DATA: Record<string, Partial<FinancialData>> = {
   }
 };
 
+async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData> | null> {
+  try {
+    // Screener uses the base symbol without .NS or .BO
+    const symbol = ticker.split('.')[0].toUpperCase();
+    const url = `https://www.screener.in/company/${symbol}/`;
+    console.log(`Fetching Screener data for ${symbol} from ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) return null;
+    const html = await response.text();
+
+    const extractMetric = (name: string) => {
+      const regex = new RegExp(`${name}[\\s\\S]*?<span class="number">([\\d,.]+)`, 'i');
+      const match = html.match(regex);
+      return match ? parseFloat(match[1].replace(/,/g, '')) : null;
+    };
+
+    const marketCapCr = extractMetric("Market Cap");
+    const currentPrice = extractMetric("Current Price");
+    const peRatio = extractMetric("Stock P/E");
+    const divYield = extractMetric("Dividend Yield");
+
+    // Extract Revenue (Sales) from the Profit & Loss table (latest year)
+    const salesRegex = /Sales[\s\S]*?<\/button>[\s\S]*?<\/td>([\s\S]*?)<\/tr>/i;
+    const salesRow = html.match(salesRegex);
+    let revenueCr = null;
+    if (salesRow) {
+      const tdMatches = salesRow[1].match(/<td.*?>([\d,.]+)<\/td>/g);
+      if (tdMatches && tdMatches.length > 0) {
+        revenueCr = parseFloat(tdMatches[tdMatches.length - 1].replace(/<[^>]+>/g, '').replace(/,/g, ''));
+      }
+    }
+
+    if (!currentPrice && !marketCapCr) return null;
+
+    return {
+      symbol: `${symbol}.NS`, // Assume NSE for display
+      price: currentPrice || 0,
+      change: 0, // Screener doesn't easily show daily change in the top ratios
+      changePercent: 0,
+      marketCap: marketCapCr ? (marketCapCr / 100).toFixed(2) + "B" : "N/A", // Cr to Billion approximation (approx 100 Cr = 1B INR)
+      peRatio: peRatio || 0,
+      revenue: revenueCr ? (revenueCr / 100).toFixed(2) + "B" : "N/A",
+      dividendYield: divYield || 0,
+    };
+  } catch (error) {
+    console.warn("Screener fetch failed:", error);
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     let { ticker } = await request.json();
@@ -56,8 +112,17 @@ export async function POST(request: Request) {
     }
 
     const cleanTicker = ticker.toUpperCase().replace(/[^A-Z0-9.]/g, '');
-    let quote;
+    
+    // PRIORITY 1: If it's an Indian stock, try Screener.in first (highly reliable for India)
+    if (cleanTicker.includes(".NS") || cleanTicker.includes(".BO") || lowerCaseName === "infosys") {
+      const screenerData = await fetchScreenerData(cleanTicker);
+      if (screenerData) {
+        console.log("Using Screener.in data for", cleanTicker);
+        return NextResponse.json(screenerData);
+      }
+    }
 
+    let quote;
     try {
       // Dynamic import for better Next.js compatibility
       const { default: yahooFinance } = await import("yahoo-finance2");
@@ -65,7 +130,14 @@ export async function POST(request: Request) {
     } catch (apiError) {
       console.warn(`API fetch failed for ${cleanTicker}, trying fallbacks/mock:`, apiError);
       
-      // If live API fails, try the MOCK data for popular stocks to ensure user satisfaction
+      // PRIORITY 2: If API fails, try Screener as fallback for non-Indian stocks too (if it exists there)
+      const screenerFallback = await fetchScreenerData(cleanTicker);
+      if (screenerFallback) {
+        console.log("Using Screener.in data as fallback for", cleanTicker);
+        return NextResponse.json(screenerFallback);
+      }
+
+      // PRIORITY 3: If still no data, try the MOCK data for popular stocks
       if (MOCK_DATA[cleanTicker]) {
         console.log("Using high-resiliency mock data for", cleanTicker);
         return NextResponse.json(MOCK_DATA[cleanTicker]);
@@ -80,28 +152,40 @@ export async function POST(request: Request) {
         }
       }
 
-      const summary = await yahooFinance.quoteSummary(quote.symbol, {
-        modules: ["financialData", "defaultKeyStatistics"],
-      });
-      summaryData = summary as unknown as Record<string, unknown>;
-    } catch {
-      // Summary data is optional
+      throw apiError;
     }
 
-    const financialDataModule = summaryData?.financialData as Record<string, unknown> | undefined;
+    if (!quote) throw new Error("No data returned");
+
+    // The original code had a quoteSummary call here, but the new instruction implies
+    // simplifying the financialData object to rely solely on the main quote data
+    // and setting revenue to N/A if not from Screener.
+    // The original quoteSummary logic is removed as per the provided diff.
+    // let summaryData;
+    // try {
+    //   const summary = await yahooFinance.quoteSummary(quote.symbol, {
+    //     modules: ["financialData", "defaultKeyStatistics"],
+    //   });
+    //   summaryData = summary as unknown as Record<string, unknown>;
+    // } catch {
+    //   // Summary data is optional
+    // }
+    // const financialDataModule = summaryData?.financialData as Record<string, unknown> | undefined;
 
     const financialData: FinancialData = {
-      ticker: ticker.toUpperCase(),
-      companyName: (quote.displayName || quote.shortName || quote.longName || ticker) as string,
-      currentPrice: (quote.regularMarketPrice as number) ?? null,
-      currency: (quote.currency as string) || "USD",
-      marketCap: (quote.marketCap as number) ?? null,
-      peRatio: (quote.trailingPE as number) ?? null,
-      fiftyTwoWeekHigh: (quote.fiftyTwoWeekHigh as number) ?? null,
-      fiftyTwoWeekLow: (quote.fiftyTwoWeekLow as number) ?? null,
-      revenue: (financialDataModule?.totalRevenue as Record<string, unknown>)?.raw as number ?? null,
-      profitMargin: (financialDataModule?.profitMargins as Record<string, unknown>)?.raw as number ?? null,
-      analystRating: (financialDataModule?.recommendationKey as string) ?? (quote.averageAnalystRating as string) ?? null,
+      symbol: quote.symbol,
+      price: quote.regularMarketPrice || 0,
+      change: quote.regularMarketChange || 0,
+      changePercent: quote.regularMarketChangePercent || 0,
+      marketCap: quote.marketCap ? (quote.marketCap / 1e9).toFixed(2) + "B" : "N/A", // Convert to billions
+      peRatio: quote.trailingPE || 0,
+      revenue: "N/A", // Set to N/A if not from Screener
+      dividendYield: quote.dividendYield || 0,
+      // The following fields were in the original but removed in the provided diff for the final object
+      // fiftyTwoWeekHigh: (quote.fiftyTwoWeekHigh as number) ?? null,
+      // fiftyTwoWeekLow: (quote.fiftyTwoWeekLow as number) ?? null,
+      // profitMargin: (financialDataModule?.profitMargins as Record<string, unknown>)?.raw as number ?? null,
+      // analystRating: (financialDataModule?.recommendationKey as string) ?? (quote.averageAnalystRating as string) ?? null,
     };
 
     return NextResponse.json(financialData);
