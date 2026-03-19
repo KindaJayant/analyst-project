@@ -17,7 +17,6 @@ const KNOWN_TICKERS: Record<string, string> = {
 
 const MOCK_DATA: Record<string, Partial<FinancialData>> = {
   "INFY.NS": {
-    symbol: "INFY.NS",
     price: 1650.45,
     change: -12.30,
     changePercent: -0.74,
@@ -27,7 +26,6 @@ const MOCK_DATA: Record<string, Partial<FinancialData>> = {
     dividendYield: 2.15,
   },
   "AAPL": {
-    symbol: "AAPL",
     price: 189.43,
     change: 1.25,
     changePercent: 0.66,
@@ -79,14 +77,13 @@ async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData>
     if (!currentPrice && !marketCapCr) return null;
 
     return {
-      symbol: `${symbol}.NS`, // Assume NSE for display
       price: currentPrice || 0,
-      change: 0, // Screener doesn't easily show daily change in the top ratios
-      changePercent: 0,
-      marketCap: marketCapCr ? (marketCapCr / 100).toFixed(2) + "B" : "N/A", // Cr to Billion approximation (approx 100 Cr = 1B INR)
+      marketCap: marketCapCr ? (marketCapCr / 100).toFixed(2) + "B" : "N/A", 
       peRatio: peRatio || 0,
       revenue: revenueCr ? (revenueCr / 100).toFixed(2) + "B" : "N/A",
       dividendYield: divYield || 0,
+      change: 0,
+      changePercent: 0,
     };
   } catch (error) {
     console.warn("Screener fetch failed:", error);
@@ -122,7 +119,7 @@ export async function POST(request: Request) {
       }
     }
 
-    let quote;
+    let quote: any = null;
     try {
       // Dynamic import for better Next.js compatibility
       const { default: yahooFinance } = await import("yahoo-finance2");
@@ -134,22 +131,23 @@ export async function POST(request: Request) {
       const screenerFallback = await fetchScreenerData(cleanTicker);
       if (screenerFallback) {
         console.log("Using Screener.in data as fallback for", cleanTicker);
-        return NextResponse.json(screenerFallback);
+        return NextResponse.json({
+          ticker: cleanTicker,
+          companyName: cleanTicker,
+          currency: "INR",
+          ...screenerFallback
+        });
       }
 
       // PRIORITY 3: If still no data, try the MOCK data for popular stocks
       if (MOCK_DATA[cleanTicker]) {
         console.log("Using high-resiliency mock data for", cleanTicker);
-        return NextResponse.json(MOCK_DATA[cleanTicker]);
-      }
-
-      // Try Indian suffixes if it was a plain ticker
-      if (!cleanTicker.includes(".")) {
-        const nsTicker = `${cleanTicker}.NS`;
-        if (MOCK_DATA[nsTicker]) {
-          console.log("Using high-resiliency mock data for", nsTicker);
-          return NextResponse.json(MOCK_DATA[nsTicker]);
-        }
+        return NextResponse.json({
+          ticker: cleanTicker,
+          companyName: cleanTicker,
+          currency: cleanTicker.endsWith(".NS") ? "INR" : "USD",
+          ...MOCK_DATA[cleanTicker]
+        });
       }
 
       throw apiError;
@@ -157,35 +155,21 @@ export async function POST(request: Request) {
 
     if (!quote) throw new Error("No data returned");
 
-    // The original code had a quoteSummary call here, but the new instruction implies
-    // simplifying the financialData object to rely solely on the main quote data
-    // and setting revenue to N/A if not from Screener.
-    // The original quoteSummary logic is removed as per the provided diff.
-    // let summaryData;
-    // try {
-    //   const summary = await yahooFinance.quoteSummary(quote.symbol, {
-    //     modules: ["financialData", "defaultKeyStatistics"],
-    //   });
-    //   summaryData = summary as unknown as Record<string, unknown>;
-    // } catch {
-    //   // Summary data is optional
-    // }
-    // const financialDataModule = summaryData?.financialData as Record<string, unknown> | undefined;
-
     const financialData: FinancialData = {
-      symbol: quote.symbol,
-      price: quote.regularMarketPrice || 0,
-      change: quote.regularMarketChange || 0,
-      changePercent: quote.regularMarketChangePercent || 0,
-      marketCap: quote.marketCap ? (quote.marketCap / 1e9).toFixed(2) + "B" : "N/A", // Convert to billions
-      peRatio: quote.trailingPE || 0,
-      revenue: "N/A", // Set to N/A if not from Screener
-      dividendYield: quote.dividendYield || 0,
-      // The following fields were in the original but removed in the provided diff for the final object
-      // fiftyTwoWeekHigh: (quote.fiftyTwoWeekHigh as number) ?? null,
-      // fiftyTwoWeekLow: (quote.fiftyTwoWeekLow as number) ?? null,
-      // profitMargin: (financialDataModule?.profitMargins as Record<string, unknown>)?.raw as number ?? null,
-      // analystRating: (financialDataModule?.recommendationKey as string) ?? (quote.averageAnalystRating as string) ?? null,
+      ticker: cleanTicker,
+      companyName: quote.longName || quote.shortName || cleanTicker,
+      price: quote.regularMarketPrice || null,
+      change: quote.regularMarketChange || null,
+      changePercent: quote.regularMarketChangePercent || null,
+      currency: quote.currency || "USD",
+      marketCap: quote.marketCap ? (quote.marketCap / 1e9).toFixed(2) + "B" : null,
+      peRatio: quote.trailingPE || null,
+      dividendYield: quote.dividendYield || null,
+      fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh || null,
+      fiftyTwoWeekLow: quote.fiftyTwoWeekLow || null,
+      revenue: null,
+      profitMargin: null,
+      analystRating: quote.averageAnalystRating || null,
     };
 
     return NextResponse.json(financialData);

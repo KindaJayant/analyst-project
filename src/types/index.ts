@@ -13,13 +13,16 @@ export interface SearchResult {
 export interface FinancialData {
   ticker: string;
   companyName: string;
-  currentPrice: number | null;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
   currency: string;
-  marketCap: number | null;
+  marketCap: string | number | null;
   peRatio: number | null;
+  dividendYield: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
-  revenue: number | null;
+  revenue: string | number | null;
   profitMargin: number | null;
   analystRating: string | null;
   error?: string;
