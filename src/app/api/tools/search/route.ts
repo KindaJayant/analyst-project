@@ -39,11 +39,33 @@ export async function POST(request: Request) {
 
     return NextResponse.json(topResults);
   } catch (error) {
-    console.error("Search tool error:", error);
-    // Return empty results instead of crashing, giving the agent a chance to retry or guess
-    return NextResponse.json([], { 
-      status: 200, 
-      headers: { "X-Search-Error": error instanceof Error ? error.message : "Rate-limited" } 
-    });
+    console.warn("DDG Search failed, trying Google News fallback:", error);
+    try {
+      // Fallback: Use Google News RSS as a search engine for headlines/snippets
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
+      const response = await fetch(rssUrl);
+      const xml = await response.text();
+      
+      // Minimal regex-based XML parsing to avoid large dependencies
+      const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+      const fallbackResults = items.slice(0, 5).map(item => {
+        const title = item.match(/<title>(.*?)<\/title>/)?.[1] || "";
+        const link = item.match(/<link>(.*?)<\/link>/)?.[1] || "";
+        const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
+        return {
+          title: title.replace(/ - .*/, ""), // Clean source from title
+          url: link,
+          snippet: `Published: ${pubDate}. Latest news finding for ${query}.`
+        };
+      });
+
+      return NextResponse.json(fallbackResults);
+    } catch (fallbackError) {
+      console.error("All search methods failed:", fallbackError);
+      return NextResponse.json([], { 
+        status: 200, 
+        headers: { "X-Search-Error": "Rate-limited and fallback failed" } 
+      });
+    }
   }
 }

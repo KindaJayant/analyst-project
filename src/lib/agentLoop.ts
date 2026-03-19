@@ -30,7 +30,9 @@ ${tools}
 ## Important Rules
 - Always respond with valid JSON only — no markdown, no explanation outside JSON
 - If a tool returns empty results, retry with a different query before giving up
-- For financial data, first search for the company's stock ticker if you don't know it
+- For financial data, prioritize Indian exchanges (NSE/BSE) first if the company is Indian. Use suffixes like .NS (NSE) or .BO (BSE).
+- If Indian data is unavailable, then fallback to NYSE/NASDAQ.
+- For financial data, first search for the company's stock ticker if you don't know it.
 - Research competitors by searching for them specifically
 - Be thorough — gather real data, don't make things up
 
@@ -63,7 +65,7 @@ const SYNTHESIS_PROMPT = `Based on all the research gathered, create a comprehen
   ]
 }
 
-IMPORTANT: Respond with ONLY the JSON object, no markdown formatting, no code fences, no extra text.`;
+IMPORTANT: Respond with ONLY the JSON object, no markdown formatting, no code fences, no extra text. If you encounter errors, retry with a different tool query. Prioritize Indian market data for Indian companies.`;
 
 function parseJSON(text: string): Record<string, unknown> | null {
   try {
