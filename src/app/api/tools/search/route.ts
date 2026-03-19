@@ -12,7 +12,24 @@ export async function POST(request: Request) {
     }
 
     const { search } = await import("duck-duck-scrape");
-    const results = await search(query, { safeSearch: 0 });
+    let results;
+    let retries = 0;
+    const maxRetries = 2;
+
+    while (retries <= maxRetries) {
+      try {
+        results = await search(query, { safeSearch: 0 });
+        break;
+      } catch (e) {
+        retries++;
+        if (retries > maxRetries) throw e;
+        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+      }
+    }
+
+    if (!results || !results.results) {
+      return NextResponse.json([]);
+    }
 
     const topResults = results.results.slice(0, 5).map((r) => ({
       title: r.title || "",
@@ -23,9 +40,10 @@ export async function POST(request: Request) {
     return NextResponse.json(topResults);
   } catch (error) {
     console.error("Search tool error:", error);
-    return NextResponse.json(
-      { error: `Search failed: ${error instanceof Error ? error.message : String(error)}` },
-      { status: 500 }
-    );
+    // Return empty results instead of crashing, giving the agent a chance to retry or guess
+    return NextResponse.json([], { 
+      status: 200, 
+      headers: { "X-Search-Error": error instanceof Error ? error.message : "Rate-limited" } 
+    });
   }
 }

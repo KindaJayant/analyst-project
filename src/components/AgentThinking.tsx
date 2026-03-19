@@ -24,8 +24,8 @@ export function AgentThinking({ steps, isRunning }: AgentThinkingProps) {
         <div className="flex items-center gap-3 mb-5">
           {isRunning && (
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[oklch(0.7_0.15_250)] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-[oklch(0.7_0.15_250)]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
             </span>
           )}
           <h2 className="text-lg font-semibold text-foreground">
@@ -40,7 +40,7 @@ export function AgentThinking({ steps, isRunning }: AgentThinkingProps) {
           {steps.map((step) => (
             <div
               key={step.id}
-              className="animate-slide-up flex items-start gap-3 rounded-lg px-4 py-3 transition-colors bg-[oklch(0.13_0.015_270_/_50%)]"
+              className="animate-slide-up flex items-start gap-4 rounded-xl px-5 py-4 transition-all duration-300 bg-background/40 border border-white/5 hover:border-primary/20 hover:bg-background/60 group"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
@@ -63,13 +63,13 @@ export function AgentThinking({ steps, isRunning }: AgentThinkingProps) {
           ))}
 
           {isRunning && steps.length > 0 && (
-            <div className="flex items-center gap-2 px-4 py-3 animate-pulse-glow">
-              <div className="flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[oklch(0.7_0.15_250)]"></span>
-                <span className="h-1.5 w-1.5 rounded-full bg-[oklch(0.7_0.15_250)] opacity-75"></span>
-                <span className="h-1.5 w-1.5 rounded-full bg-[oklch(0.7_0.15_250)] opacity-50"></span>
+            <div className="flex items-center gap-2 px-5 py-4 animate-pulse-glow">
+              <div className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary"></span>
+                <span className="h-2 w-2 rounded-full bg-primary opacity-60"></span>
+                <span className="h-2 w-2 rounded-full bg-primary opacity-30"></span>
               </div>
-              <span className="text-xs text-muted-foreground">Thinking...</span>
+              <span className="text-xs font-medium text-muted-foreground/80 tracking-wide uppercase">Agent is processing...</span>
             </div>
           )}
         </div>

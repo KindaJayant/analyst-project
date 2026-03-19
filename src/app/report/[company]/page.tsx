@@ -111,14 +111,14 @@ export default function ReportPage({ params }: ReportPageProps) {
 
         {/* Error */}
         {error && !report && (
-          <div className="max-w-3xl mx-auto glass-card rounded-xl p-6 border-[oklch(0.65_0.2_25_/_30%)]">
-            <p className="text-[oklch(0.75_0.17_25)] font-medium mb-2">
-              ❌ Error
+          <div className="max-w-3xl mx-auto glass-card rounded-2xl p-8 border-rose-500/20 shadow-2xl shadow-rose-500/5">
+            <p className="text-rose-400 font-bold text-lg mb-2 flex items-center gap-2">
+              <span>⚠️</span> Analysis Failed
             </p>
-            <p className="text-sm text-foreground/70">{error}</p>
+            <p className="text-foreground/70 leading-relaxed">{error}</p>
             <Button
               onClick={() => router.push("/")}
-              className="mt-4 bg-[oklch(0.7_0.15_250)] hover:bg-[oklch(0.65_0.17_250)] text-[oklch(0.13_0.015_270)]"
+              className="mt-6 bg-rose-500 hover:bg-rose-600 text-white font-bold"
             >
               Try Again
             </Button>

@@ -9,17 +9,17 @@ const toolConfig: Record<ToolName, { label: string; emoji: string; className: st
   search: {
     label: "Web Search",
     emoji: "🔍",
-    className: "bg-[oklch(0.7_0.15_250_/_15%)] text-[oklch(0.8_0.12_250)] border-[oklch(0.7_0.15_250_/_30%)]",
+    className: "bg-primary/10 text-primary border-primary/20",
   },
   financials: {
     label: "Financial Data",
     emoji: "📊",
-    className: "bg-[oklch(0.65_0.18_170_/_15%)] text-[oklch(0.75_0.15_170)] border-[oklch(0.65_0.18_170_/_30%)]",
+    className: "bg-foreground/5 text-foreground border-foreground/10",
   },
   news: {
     label: "News Feed",
     emoji: "📰",
-    className: "bg-[oklch(0.75_0.15_60_/_15%)] text-[oklch(0.82_0.12_60)] border-[oklch(0.75_0.15_60_/_30%)]",
+    className: "bg-paper/10 text-paper border-paper/20",
   },
 };
 

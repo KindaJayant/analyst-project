@@ -49,11 +49,11 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const sentimentColor: Record<string, string> = {
     Bullish:
-      "bg-[oklch(0.65_0.18_170_/_15%)] text-[oklch(0.75_0.15_170)] border-[oklch(0.65_0.18_170_/_30%)]",
+      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     Neutral:
-      "bg-[oklch(0.75_0.15_60_/_15%)] text-[oklch(0.82_0.12_60)] border-[oklch(0.75_0.15_60_/_30%)]",
+      "bg-amber-500/10 text-amber-400 border-amber-500/20",
     Bearish:
-      "bg-[oklch(0.65_0.2_25_/_15%)] text-[oklch(0.75_0.17_25)] border-[oklch(0.65_0.2_25_/_30%)]",
+      "bg-rose-500/10 text-rose-400 border-rose-500/20",
   };
 
   return (
@@ -88,7 +88,7 @@ export function ReportCard({ report }: ReportCardProps) {
         {report.sections.map((section, index) => (
           <Card
             key={index}
-            className={`glass-card border-border/30 transition-all duration-300 hover:border-[oklch(0.7_0.15_250_/_40%)] hover:shadow-lg hover:shadow-[oklch(0.7_0.15_250_/_5%)] ${
+            className={`glass-card border-white/5 transition-all duration-500 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 group ${
               index === report.sections.length - 1 &&
               report.sections.length % 2 !== 0
                 ? "md:col-span-2"
@@ -118,13 +118,13 @@ export function ReportCard({ report }: ReportCardProps) {
         <Button
           onClick={handleCopy}
           variant="outline"
-          className="border-border/50 hover:bg-accent/80 hover:border-[oklch(0.7_0.15_250_/_40%)] transition-all"
+          className="border-white/10 hover:bg-white/5 hover:border-primary/40 transition-all duration-300"
         >
           {copied ? "✅ Copied!" : "📋 Copy Report"}
         </Button>
         <Button
           onClick={() => router.push("/")}
-          className="bg-[oklch(0.7_0.15_250)] hover:bg-[oklch(0.65_0.17_250)] text-[oklch(0.13_0.015_270)] font-semibold transition-all"
+          className="bg-primary hover:bg-primary/80 text-milk font-bold px-8 transition-all duration-300 shadow-lg shadow-primary/20"
         >
           🔄 New Analysis
         </Button>

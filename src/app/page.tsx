@@ -20,57 +20,63 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
       {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[oklch(0.7_0.15_250_/_6%)] blur-[120px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[oklch(0.7_0.18_320_/_5%)] blur-[100px]"></div>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-primary/20 blur-[160px] animate-pulse-glow"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-primary/5 blur-[200px]"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-primary/15 blur-[140px] animate-pulse-glow" style={{ animationDelay: '1.5s' }}></div>
       </div>
 
       <div className="relative z-10 max-w-2xl w-full text-center space-y-8">
         {/* Logo / Title */}
-        <div className="space-y-4">
-          <div className="text-5xl mb-2">🔬</div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            <span className="gradient-text">ResearchAgent</span>
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-4xl shadow-2xl shadow-primary/20 animate-slide-up">
+              🔬
+            </div>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <span className="gradient-text">Research</span>
+            <span className="text-milk/90">Agent</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-            Enter any company name and let our AI agent research it autonomously
-            — pulling financial data, news, and competitive intelligence.
+          <p className="text-lg md:text-xl text-paper/60 max-w-lg mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            The autonomous engine for deep company intelligence. Fetch financials, news, and market insights in seconds.
           </p>
         </div>
 
         {/* Input Form */}
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
+          className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto p-2 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl animate-slide-up"
+          style={{ animationDelay: '0.3s' }}
         >
           <Input
             id="company-input"
             type="text"
-            placeholder="e.g. Apple, Tesla, Infosys..."
+            placeholder="Search Apple, Tesla, Infosys..."
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            className="flex-1 h-12 text-base bg-[oklch(0.17_0.015_270_/_80%)] border-border/50 placeholder:text-muted-foreground/50 focus:border-[oklch(0.7_0.15_250_/_60%)] focus:ring-[oklch(0.7_0.15_250_/_20%)] transition-all"
+            className="flex-1 h-16 text-lg bg-transparent border-none focus-visible:ring-0 placeholder:text-paper/30 px-6"
           />
           <Button
             type="submit"
             disabled={!company.trim()}
-            className="h-12 px-8 text-base font-semibold bg-[oklch(0.7_0.15_250)] hover:bg-[oklch(0.65_0.17_250)] text-[oklch(0.13_0.015_270)] transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            className="h-16 px-10 text-lg font-bold bg-primary hover:bg-primary/80 text-milk rounded-2xl transition-all disabled:opacity-40 shadow-xl shadow-primary/20"
           >
-            🚀 Analyze
+            Go 🚀
           </Button>
         </form>
 
         {/* Feature badges */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
           {[
-            { emoji: "🔍", label: "Web Research" },
-            { emoji: "📊", label: "Financial Data" },
-            { emoji: "📰", label: "Live News" },
-            { emoji: "🤖", label: "AI Analysis" },
+            { emoji: "🔍", label: "Web Intelligence" },
+            { emoji: "📊", label: "Financial Core" },
+            { emoji: "📰", label: "Real-time News" },
+            { emoji: "🤖", label: "Neural Synthesis" },
           ].map((feature) => (
             <div
               key={feature.label}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[oklch(0.22_0.02_270_/_60%)] text-muted-foreground border border-border/30"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold bg-white/5 text-paper/70 border border-white/5 hover:border-primary/30 transition-all cursor-default"
             >
               <span>{feature.emoji}</span>
               {feature.label}
