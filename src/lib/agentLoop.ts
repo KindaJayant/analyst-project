@@ -31,8 +31,8 @@ ${tools}
 - Always respond with valid JSON only — no markdown, no explanation outside JSON
 - If a tool returns empty results, retry with a different query before giving up
 - For financial data, prioritize Indian exchanges (NSE/BSE) first if the company is Indian. Use suffixes like .NS (NSE) or .BO (BSE).
+- If you know the company's ticker (e.g. AAPL for Apple, INFY.NS for Infosys), call the `financials` tool DIRECTLY. Do not search for the ticker unless you are completely unsure.
 - If Indian data is unavailable, then fallback to NYSE/NASDAQ.
-- For financial data, first search for the company's stock ticker if you don't know it.
 - Research competitors by searching for them specifically
 - Be thorough — gather real data, don't make things up
 
