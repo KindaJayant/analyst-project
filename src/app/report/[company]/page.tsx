@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, use } from "react";
 import { AgentThinking } from "@/components/AgentThinking";
 import { ReportCard } from "@/components/ReportCard";
 import { AgentStep, AgentMessage, ResearchReport } from "@/types";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 interface ReportPageProps {
@@ -35,11 +34,11 @@ export default function ReportPage({ params }: ReportPageProps) {
         });
 
         if (!response.ok) {
-          throw new Error(`Agent returned status ${response.status}`);
+          throw new Error(`System returned status ${response.status}`);
         }
 
         const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response body");
+        if (!reader) throw new Error("Connection failed");
 
         const decoder = new TextDecoder();
         let buffer = "";
@@ -62,7 +61,7 @@ export default function ReportPage({ params }: ReportPageProps) {
               } else if (message.type === "report" && message.report) {
                 setReport(message.report);
               } else if (message.type === "error") {
-                setError(message.error || "Unknown error");
+                setError(message.error || "Process interrupted");
               }
             } catch {
               // Skip invalid JSON lines
@@ -71,7 +70,7 @@ export default function ReportPage({ params }: ReportPageProps) {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to run analysis"
+          err instanceof Error ? err.message : "System failure"
         );
       } finally {
         setIsRunning(false);
@@ -82,50 +81,43 @@ export default function ReportPage({ params }: ReportPageProps) {
   }, [decodedCompany]);
 
   return (
-    <main className="min-h-screen px-4 py-12 relative">
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full bg-[oklch(0.7_0.15_250_/_4%)] blur-[120px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[oklch(0.7_0.18_320_/_3%)] blur-[100px]"></div>
-      </div>
-
-      <div className="relative z-10 max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <button
-            onClick={() => router.push("/")}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            ← Back to home
-          </button>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Researching{" "}
-            <span className="gradient-text">{decodedCompany}</span>
-          </h1>
+    <main className="min-h-screen bg-black text-white font-sans selection:bg-[#FF5B22] selection:text-white">
+      {/* ── Navigation ──────────────────────────────── */}
+      <nav className="flex items-center justify-between px-8 py-6 border-b border-[#111] bg-black/80 backdrop-blur-md sticky top-0 z-50">
+        <button 
+          onClick={() => router.push("/")}
+          className="flex items-center gap-1 group"
+        >
+          <span className="font-bold text-xs tracking-tighter group-hover:text-[#FF5B22] transition-colors">TRADING</span>
+          <span className="font-light text-xs tracking-tighter text-[#888]">SPACE</span>
+        </button>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-[#444]">
+          Intelligence Pipeline v3.0
         </div>
+      </nav>
 
-        {/* Agent Thinking Panel */}
+      {/* ── Page Content ────────────────────────────── */}
+      <div className="max-w-7xl mx-auto">
+        {/* Error Handling */}
+        {error && !report && (
+          <div className="max-w-2xl mx-auto mt-40 px-6 py-12 border border-[#333] bg-[#0A0A0A]">
+            <p className="text-[#FF4444] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Critical Error</p>
+            <p className="text-xl font-bold tracking-tight text-white mb-8">{error}</p>
+            <button
+              onClick={() => router.push("/")}
+              className="px-8 py-3 bg-[#FF4444] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#cc3333] transition-all"
+            >
+              Re-initialize
+            </button>
+          </div>
+        )}
+
+        {/* Status Logs */}
         {(isRunning || (!report && !error)) && (
           <AgentThinking steps={steps} isRunning={isRunning} />
         )}
 
-        {/* Error */}
-        {error && !report && (
-          <div className="max-w-3xl mx-auto glass-card rounded-2xl p-8 border-rose-500/20 shadow-2xl shadow-rose-500/5">
-            <p className="text-rose-400 font-bold text-lg mb-2 flex items-center gap-2">
-              <span>⚠️</span> Analysis Failed
-            </p>
-            <p className="text-foreground/70 leading-relaxed">{error}</p>
-            <Button
-              onClick={() => router.push("/")}
-              className="mt-6 bg-rose-500 hover:bg-rose-600 text-white font-bold"
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-
-        {/* Report */}
+        {/* Final Context */}
         {report && <ReportCard report={report} />}
       </div>
     </main>

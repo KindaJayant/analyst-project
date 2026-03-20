@@ -1,139 +1,100 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-plum: #381932;
-  --color-milk: #FFF3E6;
-  --color-asphalt: #302f2c;
-  --color-paper: #efede3;
+  /* Trading Space palette */
+  --color-orange: #FF5B22;
+  --color-dark: #000000;
+  --color-surface: #111111;
+  --color-surface2: #1A1A1A;
+  --color-border: #222222;
+  --color-text: #FFFFFF;
+  --color-muted: #888888;
 
-  --color-background: oklch(0 0 0);
-  --color-foreground: var(--color-milk);
+  --color-background: var(--color-dark);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-popover: var(--color-surface2);
+  --color-popover-foreground: var(--color-text);
+  --color-primary: var(--color-orange);
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: var(--color-surface2);
+  --color-secondary-foreground: var(--color-text);
+  --color-muted-foreground: var(--color-muted);
+  --color-accent: var(--color-orange);
+  --color-accent-foreground: #FFFFFF;
+  --color-destructive: #FF4444;
+  --color-input: var(--color-surface);
+  --color-ring: var(--color-orange);
 
-  --color-card: var(--color-asphalt);
-  --color-card-foreground: var(--color-milk);
-
-  --color-popover: var(--color-asphalt);
-  --color-popover-foreground: var(--color-milk);
-
-  --color-primary: var(--color-plum);
-  --color-primary-foreground: var(--color-milk);
-
-  --color-secondary: oklch(0.2 0.02 270);
-  --color-secondary-foreground: var(--color-paper);
-
-  --color-muted: oklch(0.15 0.02 270);
-  --color-muted-foreground: var(--color-paper);
-
-  --color-accent: var(--color-plum);
-  --color-accent-foreground: var(--color-milk);
-
-  --color-destructive: oklch(0.6 0.2 25);
-  --color-border: oklch(0.25 0.02 270 / 80%);
-  --color-input: oklch(0.2 0.02 270);
-  --color-ring: var(--color-plum);
-
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-  --radius: 0.75rem;
-}
-
-:root {
-  --radius: 0.75rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  * { @apply border-border outline-ring/50; }
   body {
-    @apply bg-background text-foreground selection:bg-primary/30 selection:text-milk;
-  }
-  html {
-    @apply font-sans;
-  }
-}
-
-/* Custom animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px var(--plum));
-  }
-  50% {
-    opacity: 0.6;
-    filter: drop-shadow(0 0 2px var(--plum));
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ─── Layout & Components ───────────────────────────────── */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
+.card-v3 {
+  @apply bg-surface border border-border p-6 transition-all duration-200;
+}
+.card-v3:hover {
+  @apply border-orange/40;
+}
+
+.pill-button {
+  @apply px-6 py-2 rounded-full font-semibold transition-all duration-200;
+}
+
+.input-v3 {
+  @apply bg-surface border border-border px-4 py-3 text-white outline-none focus:border-orange/50 transition-all duration-200;
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+.title-main {
+  @apply text-5xl md:text-7xl font-bold tracking-tight mb-8;
+}
+
+.label-professional {
+  @apply text-xs font-bold uppercase tracking-widest text-muted;
+}
+
+.stat-value {
+  @apply text-2xl font-bold text-white;
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.6s ease-out;
+  animation: fade-in 0.4s ease-out forwards;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
-
-/* Glassmorphism card */
-.glass-card {
-  background: var(--asphalt);
-  backdrop-filter: blur(20px);
-  border: 1px solid oklch(0.4 0.04 270 / 20%);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #D4A5CE, var(--color-milk));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--asphalt);
-  border-radius: 4px;
-  border: 2px solid var(--background);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.35 0.03 270);
-}
+/* ─── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333333; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-orange); }

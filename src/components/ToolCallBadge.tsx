@@ -1,37 +1,28 @@
-import { Badge } from "@/components/ui/badge";
-import { ToolName } from "@/types";
+"use client";
 
 interface ToolCallBadgeProps {
-  tool: ToolName;
+  tool: string;
 }
 
-const toolConfig: Record<ToolName, { label: string; emoji: string; className: string }> = {
-  search: {
-    label: "Web Search",
-    emoji: "🔍",
-    className: "bg-primary/10 text-primary border-primary/20",
-  },
-  financials: {
-    label: "Financial Data",
-    emoji: "📊",
-    className: "bg-foreground/5 text-foreground border-foreground/10",
-  },
-  news: {
-    label: "News Feed",
-    emoji: "📰",
-    className: "bg-paper/10 text-paper border-paper/20",
-  },
-};
-
 export function ToolCallBadge({ tool }: ToolCallBadgeProps) {
-  const config = toolConfig[tool];
+  const getToolName = (t: string) => {
+    switch (t.toLowerCase()) {
+      case "search":
+        return "WEB_INTELLIGENCE";
+      case "financials":
+        return "FINANCIAL_DATA";
+      case "news":
+        return "REALTIME_NEWS";
+      default:
+        return t.toUpperCase();
+    }
+  };
 
   return (
-    <Badge
-      variant="outline"
-      className={`text-xs font-medium ${config.className}`}
-    >
-      {config.emoji} {config.label}
-    </Badge>
+    <div className="inline-flex items-center gap-2 px-3 py-1 border border-[#FF5B22]/30 bg-[#FF5B22]/5">
+      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#FF5B22]">
+        {getToolName(tool)}
+      </span>
+    </div>
   );
 }

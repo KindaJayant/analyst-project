@@ -1,16 +1,7 @@
 "use client";
 
 import { ResearchReport } from "@/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -24,9 +15,9 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const handleCopy = async () => {
     const text = report.sections
-      .map((s) => `## ${s.icon} ${s.title}\n\n${s.content}`)
+      .map((s) => `${s.title.toUpperCase()}\n\n${s.content}`)
       .join("\n\n---\n\n");
-    const fullText = `# Research Report: ${report.company}\n\nGenerated: ${new Date(
+    const fullText = `MARKET RESEARCH REPORT: ${report.company.toUpperCase()}\nGenerated: ${new Date(
       report.generatedAt
     ).toLocaleDateString()}\nSentiment: ${report.overallSentiment}\n\n---\n\n${text}`;
 
@@ -35,99 +26,88 @@ export function ReportCard({ report }: ReportCardProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
-      const textarea = document.createElement("textarea");
-      textarea.value = fullText;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const sentimentColor: Record<string, string> = {
-    Bullish:
-      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    Neutral:
-      "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    Bearish:
-      "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  const sentimentStyles: Record<string, string> = {
+    Bullish: "text-[#00FF88] border-[#00FF88]/30",
+    Neutral: "text-[#FFCC00] border-[#FFCC00]/30",
+    Bearish: "text-[#FF4444] border-[#FF4444]/30",
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold gradient-text mb-2">
-          {report.company}
-        </h1>
-        <div className="flex items-center justify-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            Generated {new Date(report.generatedAt).toLocaleDateString()}
-          </span>
-          <Badge
-            variant="outline"
-            className={`font-semibold ${
-              sentimentColor[report.overallSentiment] || sentimentColor.Neutral
-            }`}
-          >
-            {report.overallSentiment === "Bullish" && "📈 "}
-            {report.overallSentiment === "Bearish" && "📉 "}
-            {report.overallSentiment === "Neutral" && "➡️ "}
-            {report.overallSentiment}
-          </Badge>
+    <div className="w-full max-w-7xl mx-auto px-4 py-20 animate-fade-in font-sans">
+      {/* ── Subtitle / Meta ─────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-baseline justify-between gap-6 mb-16 border-b border-[#111] pb-12">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="h-px w-8 bg-[#FF5B22]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#FF5B22]">
+              Market Intelligence
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase">
+            {report.company}
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-8 border-l border-[#111] pl-0 md:pl-12">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#555] mb-2">Timestamp</p>
+            <p className="text-xs font-medium text-white/60">
+              {new Date(report.generatedAt).toLocaleDateString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#555] mb-2">Outlook</p>
+            <div className={`text-xs font-bold uppercase tracking-widest border px-3 py-1 ${sentimentStyles[report.overallSentiment] || sentimentStyles.Neutral}`}>
+              {report.overallSentiment}
+            </div>
+          </div>
         </div>
       </div>
 
-      <Separator className="mb-8 bg-border/50" />
-
-      {/* Report Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* ── Dynamic Grid ───────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-[#111] border border-[#111]">
         {report.sections.map((section, index) => (
-          <Card
+          <div
             key={index}
-            className={`glass-card border-white/5 transition-all duration-500 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 group ${
-              index === report.sections.length - 1 &&
-              report.sections.length % 2 !== 0
-                ? "md:col-span-2"
-                : ""
-            }`}
+            className="bg-black p-10 hover:bg-[#050505] transition-colors group"
           >
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="text-2xl">{section.icon}</span>
-                {section.title}
-              </CardTitle>
-              <CardDescription className="sr-only">
-                {section.title} for {report.company}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {section.content}
-              </div>
-            </CardContent>
-          </Card>
+            <div className="h-px w-0 bg-[#FF5B22] mb-8 group-hover:w-full transition-all duration-500" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF5B22]/60 mb-6 flex items-center gap-2">
+              <span className="text-[8px] opacity-40">0{index + 1}</span> 
+              {section.title.toUpperCase()}
+            </p>
+            <div className="text-sm text-white/50 leading-relaxed whitespace-pre-wrap tracking-tight group-hover:text-white/80 transition-colors">
+              {section.content.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]|\uD83E[\uDD00-\uDDFF]/g, '')}
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-center gap-4 mt-10">
-        <Button
+      {/* ── Action Strip ────────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-24">
+        <button
           onClick={handleCopy}
-          variant="outline"
-          className="border-white/10 hover:bg-white/5 hover:border-primary/40 transition-all duration-300"
+          className="w-full md:w-auto px-10 py-4 border border-[#222] text-[10px] font-bold uppercase tracking-[0.2em] hover:border-[#FF5B22] hover:text-[#FF5B22] transition-all"
         >
-          {copied ? "✅ Copied!" : "📋 Copy Report"}
-        </Button>
-        <Button
+          {copied ? "SUCCESS" : "GENERATE CLIPBOARD"}
+        </button>
+        <button
           onClick={() => router.push("/")}
-          className="bg-primary hover:bg-primary/80 text-milk font-bold px-8 transition-all duration-300 shadow-lg shadow-primary/20"
+          className="w-full md:w-auto px-10 py-4 bg-[#FF5B22] text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#e44a16] transition-all"
         >
-          🔄 New Analysis
-        </Button>
+          NEW ANALYSIS
+        </button>
+      </div>
+
+      <div className="mt-12 text-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#222]">
+          Trading Space Intelligence Pipeline
+        </p>
       </div>
     </div>
   );
