@@ -15,14 +15,24 @@ const KNOWN_TICKERS: Record<string, string> = {
   "alphabet": "GOOGL",
 };
 
+function formatIndianCurrency(num: number): string {
+  // Assuming num is in Rupees
+  if (num >= 10000000) { // 1 Crore = 10,000,000
+    return (num / 10000000).toFixed(2) + " Cr";
+  } else if (num >= 100000) { // 1 Lakh = 100,000
+    return (num / 100000).toFixed(2) + " L";
+  }
+  return num.toLocaleString(); // For smaller amounts, just format with commas
+}
+
 const MOCK_DATA: Record<string, Partial<FinancialData>> = {
   "INFY.NS": {
     price: 1650.45,
     change: -12.30,
     changePercent: -0.74,
-    marketCap: "6.85T",
+    marketCap: "6,85,000 Cr", // Approx 6.85 Trillion INR
     peRatio: 25.4,
-    revenue: "1.54T",
+    revenue: "1,54,000 Cr", // Approx 1.54 Trillion INR
     dividendYield: 2.15,
   },
   "AAPL": {
@@ -78,9 +88,9 @@ async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData>
 
     return {
       price: currentPrice || 0,
-      marketCap: marketCapCr ? (marketCapCr / 100).toFixed(2) + "B" : "N/A", 
+      marketCap: marketCapCr ? `${marketCapCr.toLocaleString()} Cr` : "N/A", 
       peRatio: peRatio || 0,
-      revenue: revenueCr ? (revenueCr / 100).toFixed(2) + "B" : "N/A",
+      revenue: revenueCr ? `${revenueCr.toLocaleString()} Cr` : "N/A",
       dividendYield: divYield || 0,
       change: 0,
       changePercent: 0,
@@ -115,7 +125,12 @@ export async function POST(request: Request) {
       const screenerData = await fetchScreenerData(cleanTicker);
       if (screenerData) {
         console.log("Using Screener.in data for", cleanTicker);
-        return NextResponse.json(screenerData);
+        return NextResponse.json({
+          ticker: cleanTicker,
+          companyName: cleanTicker,
+          currency: "INR",
+          ...screenerData
+        });
       }
     }
 
@@ -155,6 +170,7 @@ export async function POST(request: Request) {
 
     if (!quote) throw new Error("No data returned");
 
+    const isINR = quote.currency === "INR";
     const financialData: FinancialData = {
       ticker: cleanTicker,
       companyName: quote.longName || quote.shortName || cleanTicker,
@@ -162,7 +178,9 @@ export async function POST(request: Request) {
       change: quote.regularMarketChange || null,
       changePercent: quote.regularMarketChangePercent || null,
       currency: quote.currency || "USD",
-      marketCap: quote.marketCap ? (quote.marketCap / 1e9).toFixed(2) + "B" : null,
+      marketCap: quote.marketCap 
+        ? (isINR ? formatIndianCurrency(quote.marketCap) : (quote.marketCap / 1e9).toFixed(2) + "B") 
+        : null,
       peRatio: quote.trailingPE || null,
       dividendYield: quote.dividendYield || null,
       fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh || null,
@@ -174,10 +192,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(financialData);
   } catch (error) {
-    console.error("Financials tool error:", error);
+    console.error("Financial tool error:", error);
     return NextResponse.json(
       {
-        error: `Financial data fetch failed: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Financial data unavailable: ${error instanceof Error ? error.message : String(error)}`,
       },
       { status: 500 }
     );

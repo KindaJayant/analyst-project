@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  const body = await request.json();
+  const query: string = body?.query;
+
+  if (!query || typeof query !== "string") {
+    return NextResponse.json(
+      { error: "Missing or invalid 'query' parameter" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const { query } = await request.json();
-
-    if (!query || typeof query !== "string") {
-      return NextResponse.json(
-        { error: "Missing or invalid 'query' parameter" },
-        { status: 400 }
-      );
-    }
-
     const { search } = await import("duck-duck-scrape");
     let results;
     let retries = 0;
