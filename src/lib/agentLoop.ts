@@ -56,16 +56,21 @@ Respond with ONLY valid JSON in this exact structure:
   "company": "Official Company Name",
   "overallSentiment": "Bullish" | "Neutral" | "Bearish",
   "sections": [
-    {"title": "Company Overview", "icon": "OVERVIEW", "content": "• Point 1: Business description...\\n• Point 2: Core industry position...\\n• Point 3: Operational scale..."},
-    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "• Point 1: Current valuation metrics...\\n• Point 2: Revenue and profitability analysis...\\n• Point 3: Debt levels and solvency..."},
-    {"title": "Recent News & Developments", "icon": "NEWS", "content": "• Point 1: Key event (date)...\\n• Point 2: Corporate action (date)..."},
-    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "• Point 1: Market share comparison...\\n• Point 2: Tier 1 rivals analysis..."},
-    {"title": "Risk Factors", "icon": "RISK", "content": "• Point 1: Regulatory exposure...\\n• Point 2: Financial/Market risks..."},
-    {"title": "Investment Summary", "icon": "SUMMARY", "content": "• Point 1: Consolidated Bull case...\\n• Point 2: Consolidated Bear case...\\n• Point 3: Definitive investment verdict..."}
+    {"title": "Company Overview", "icon": "OVERVIEW", "content": "• Business description and scale...\\n• Core industry position...\\n• Strategic focus..."},
+    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "• Price and valuation context...\\n• Revenue/Profitability trends...\\n• Balance sheet health (debt/cash)..."},
+    {"title": "Recent News & Developments", "icon": "NEWS", "content": "• Key event 1 (date)...\\n• Key event 2 (date)..."},
+    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "• Market share vs peers...\\n• Peer 1 comparison...\\n• Peer 2 comparison..."},
+    {"title": "Risk Factors", "icon": "RISK", "content": "• Primary risk 1...\\n• Primary risk 2...\\n• Primary risk 3..."},
+    {"title": "Investment Summary", "icon": "SUMMARY", "content": "• Consolidated Bull case...\\n• Consolidated Bear case...\\n• Final investment verdict..."}
   ]
 }
 
-CRITICAL: Use ONLY bullet points (•) for content. Be analytical and realistic. If a company is in distress (e.g., Vodafone Idea), reflect that clearly in the sentiment. No preamble, no code fences. Only the JSON object.`;
+CRITICAL FORMATTING:
+1. Use ONLY bullet points (•) for content.
+2. DO NOT use newlines inside a single bullet point.
+3. Use exactly one bullet point per line.
+4. If a company is in distress (high debt, negative growth, regulatory issues), the sentiment MUST be BEARISH. Do not be overly neutral.
+No preamble, no code fences. Only the JSON object.`;
 
 function parseJSON(text: string): Record<string, unknown> | null {
   try {
@@ -107,12 +112,20 @@ export async function* runAgentLoop(
   try {
     yield emitStep("plan", `Initializing research pipeline for ${company}...`);
 
-    conversationHistory.push({
-      role: "user",
-      text: `Analyze "${company}". Begin with a research plan.`,
-    });
+    // First step: establish a research plan
+    const initialPrompt = `RESEARCH CONTEXT: The user wants a professional investment brief for "${company}".
+Identify the correct stock ticker if not provided (e.g., for Indian companies use .NS/.BO).
+Establish a high-fidelity 6-step research plan.
+FORMAT: Use [01] to [06] markers for the plan.
+Example: Research plan established: [01] Identify ticker... [02] Gather financials...`;
 
-    const planResponse = await callGemini(systemPrompt, conversationHistory);
+    // Add initial system instruction as a message to guide the first turn
+    const currentSteps: { role: "user" | "model"; text: string }[] = [
+      { role: "user", text: initialPrompt }
+    ];
+
+    const planResponse = await callGemini(systemPrompt, currentSteps);
+    conversationHistory.push({ role: "user", text: initialPrompt }); // Add to history for subsequent turns
     conversationHistory.push({ role: "model", text: planResponse });
 
     const planData = parseJSON(planResponse);

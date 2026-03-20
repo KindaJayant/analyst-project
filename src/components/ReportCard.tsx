@@ -37,20 +37,24 @@ export function ReportCard({ report }: ReportCardProps) {
   };
 
   const renderContent = (content: string) => {
-    // Clean emojis and split by sentences/lines to create bullets
+    // 1. Clean emojis
     const cleaned = content.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]|\uD83E[\uDD00-\uDDFF]/g, '');
     
-    // Split by newlines or numbered items (1. , 2. ) or bullet points
-    const items = cleaned.split(/\n|(?=\d+\.)|(?=•)/).filter(i => i.trim().length > 0);
+    // 2. Identify if it already contains bullets (•, -, *)
+    const hasBullets = /[•\-*]/.test(cleaned);
 
-    if (items.length <= 1) {
-      // Fallback: try splitting by sentences
-      const sentences = cleaned.split(/(?<=[.!?])\s+/);
-      if (sentences.length > 1) return renderList(sentences);
-      return <p className="text-sm text-white/50 leading-relaxed tracking-tight group-hover:text-white/80 transition-colors">{cleaned}</p>;
+    if (hasBullets) {
+      // Split by bullet markers at the start of a line or within text
+      const items = cleaned.split(/(?=[•\-*])/).map(i => i.replace(/^[•\-*]\s*/, '').trim()).filter(i => i.length > 0);
+      return renderList(items);
     }
 
-    return renderList(items);
+    // 3. If no bullets, split by newlines as a fallback
+    const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length > 1) return renderList(lines);
+
+    // 4. Pure paragraph fallback
+    return <p className="text-sm text-white/50 leading-relaxed tracking-tight group-hover:text-white/80 transition-colors">{cleaned}</p>;
   };
 
   const renderList = (items: string[]) => (
