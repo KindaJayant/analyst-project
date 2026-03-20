@@ -30,7 +30,9 @@ ${tools}
 - Response must be VALID JSON only. No explanations, no markdown outside JSON.
 - If a tool returns no data, adjust parameters and retry.
 - For Indian assets, prioritize NSE/BSE data (use .NS or .BO suffixes).
-- Use professional financial terminology. No emojis or informal language in logs or report content.
+- Use professional financial terminology. No emojis or informal language.
+- BE OPINIONATED: Do not default to "Neutral" if the data shows extreme distress, high debt, or poor growth. Provide a realistic sentiment (Bearish/Bullish) based on data.
+- FORMATTING: Every report section content MUST be written as a bulleted list of 4-6 distinct analytical points. 
 - Ensure all figures are attributed to tools and not hallucinated.
 
 ## Operational JSON Formats
@@ -54,16 +56,16 @@ Respond with ONLY valid JSON in this exact structure:
   "company": "Official Company Name",
   "overallSentiment": "Bullish" | "Neutral" | "Bearish",
   "sections": [
-    {"title": "Company Overview", "icon": "OVERVIEW", "content": "Comprehensive business description, industry position, and headquarters."},
-    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "Price, market cap, P/E, revenue, and key margins."},
-    {"title": "Recent News & Developments", "icon": "NEWS", "content": "Summary of the last 5 significant corporate events or news items."},
-    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "Primary competitors and market positioning analysis."},
-    {"title": "Risk Factors", "icon": "RISK", "content": "Analysis of market, regulatory, and operational risks."},
-    {"title": "Investment Summary", "icon": "SUMMARY", "content": "Consolidated Bull/Bear case and valuation sentiment."}
+    {"title": "Company Overview", "icon": "OVERVIEW", "content": "• Point 1: Business description...\\n• Point 2: Core industry position...\\n• Point 3: Operational scale..."},
+    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "• Point 1: Current valuation metrics...\\n• Point 2: Revenue and profitability analysis...\\n• Point 3: Debt levels and solvency..."},
+    {"title": "Recent News & Developments", "icon": "NEWS", "content": "• Point 1: Key event (date)...\\n• Point 2: Corporate action (date)..."},
+    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "• Point 1: Market share comparison...\\n• Point 2: Tier 1 rivals analysis..."},
+    {"title": "Risk Factors", "icon": "RISK", "content": "• Point 1: Regulatory exposure...\\n• Point 2: Financial/Market risks..."},
+    {"title": "Investment Summary", "icon": "SUMMARY", "content": "• Point 1: Consolidated Bull case...\\n• Point 2: Consolidated Bear case...\\n• Point 3: Definitive investment verdict..."}
   ]
 }
 
-No preamble, no code fences, no emojis. Only the JSON object.`;
+CRITICAL: Use ONLY bullet points (•) for content. Be analytical and realistic. If a company is in distress (e.g., Vodafone Idea), reflect that clearly in the sentiment. No preamble, no code fences. Only the JSON object.`;
 
 function parseJSON(text: string): Record<string, unknown> | null {
   try {

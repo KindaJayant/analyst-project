@@ -81,44 +81,48 @@ export default function ReportPage({ params }: ReportPageProps) {
   }, [decodedCompany]);
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans selection:bg-[#FF5B22] selection:text-white">
+    <main className="h-screen bg-black text-white font-sans selection:bg-[#FF5B22] selection:text-white flex flex-col overflow-hidden">
       {/* ── Navigation ──────────────────────────────── */}
-      <nav className="flex items-center justify-between px-8 py-6 border-b border-[#111] bg-black/80 backdrop-blur-md sticky top-0 z-50">
+      <nav className="flex items-center justify-between px-8 py-5 border-b border-[#111] bg-black/80 backdrop-blur-md z-50">
         <button 
           onClick={() => router.push("/")}
           className="flex items-center gap-1 group"
         >
-          <span className="font-bold text-xs tracking-tighter group-hover:text-[#FF5B22] transition-colors">TRADING</span>
-          <span className="font-light text-xs tracking-tighter text-[#888]">SPACE</span>
+          <span className="font-bold text-xs tracking-tighter text-[#FF5B22] group-hover:text-white transition-colors">RESEARCH</span>
+          <span className="font-light text-xs tracking-tighter text-[#888]">AGENT</span>
         </button>
         <div className="text-[10px] font-bold uppercase tracking-widest text-[#444]">
-          Intelligence Pipeline v3.0
+          Live Intelligence Analysis
         </div>
       </nav>
 
-      {/* ── Page Content ────────────────────────────── */}
-      <div className="max-w-7xl mx-auto">
-        {/* Error Handling */}
-        {error && !report && (
-          <div className="max-w-2xl mx-auto mt-40 px-6 py-12 border border-[#333] bg-[#0A0A0A]">
-            <p className="text-[#FF4444] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Critical Error</p>
-            <p className="text-xl font-bold tracking-tight text-white mb-8">{error}</p>
-            <button
-              onClick={() => router.push("/")}
-              className="px-8 py-3 bg-[#FF4444] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#cc3333] transition-all"
-            >
-              Re-initialize
-            </button>
-          </div>
-        )}
+      {/* ── Page Content (Internal Scrolling) ───────── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
+          {/* Error Handling */}
+          {error && !report && (
+            <div className="max-w-2xl mx-auto my-auto px-6 py-12 border border-[#333] bg-[#0A0A0A]">
+              <p className="text-[#FF4444] text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Critical Error</p>
+              <p className="text-xl font-bold tracking-tight text-white mb-8">{error}</p>
+              <button
+                onClick={() => router.push("/")}
+                className="px-8 py-3 bg-[#FF4444] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#cc3333] transition-all"
+              >
+                Re-initialize
+              </button>
+            </div>
+          )}
 
-        {/* Status Logs */}
-        {(isRunning || (!report && !error)) && (
-          <AgentThinking steps={steps} isRunning={isRunning} />
-        )}
+          {/* Status Logs */}
+          {(isRunning || (!report && !error)) && (
+            <div className="my-auto">
+              <AgentThinking steps={steps} isRunning={isRunning} />
+            </div>
+          )}
 
-        {/* Final Context */}
-        {report && <ReportCard report={report} />}
+          {/* Final Context */}
+          {report && <ReportCard report={report} />}
+        </div>
       </div>
     </main>
   );

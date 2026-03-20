@@ -13,6 +13,8 @@ const KNOWN_TICKERS: Record<string, string> = {
   "google": "GOOGL",
   "amazon": "AMZN",
   "alphabet": "GOOGL",
+  "vi": "IDEA.NS",
+  "vodafone idea": "IDEA.NS",
 };
 
 function formatIndianCurrency(num: number): string {
