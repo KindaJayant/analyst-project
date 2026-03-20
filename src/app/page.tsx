@@ -24,9 +24,6 @@ export default function Home() {
           <span className="font-light text-lg tracking-tighter text-[#888]">AGENT</span>
         </div>
         <div className="flex items-center gap-6">
-          <div className="hidden md:block text-[10px] font-bold uppercase tracking-[0.3em] text-[#444]">
-            v3.0.0 — Stable Release
-          </div>
           <button className="bg-[#FF5B22] text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded-full hover:bg-[#e44a16] transition-colors">
             Contact
           </button>
