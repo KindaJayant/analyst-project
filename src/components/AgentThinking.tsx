@@ -18,6 +18,7 @@ export function AgentThinking({ steps, isRunning }: AgentThinkingProps) {
   }, [steps]);
 
   const renderContent = (content: string) => {
+    if (typeof content !== "string") return null;
     const cleaned = content.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]|\uD83E[\uDD00-\uDDFF]/g, '');
     
     // Check if it's a research plan (contains [01], [02]... or Plan established)
