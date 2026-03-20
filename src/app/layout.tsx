@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Trading Space — Autonomous Market Intelligence",
+  title: "ResearchAgent — Autonomous Market Intelligence",
   description:
     "Advanced autonomous systems for high-fidelity market research and financial synthesis.",
 };
