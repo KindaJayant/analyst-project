@@ -6,7 +6,7 @@ export async function POST(request: Request) {
 
   if (!query || typeof query !== "string") {
     return NextResponse.json(
-      { error: "Missing or invalid 'query' parameter" },
+      { error: "Invalid search query parameter" },
       { status: 400 }
     );
   }
@@ -40,32 +40,29 @@ export async function POST(request: Request) {
 
     return NextResponse.json(topResults);
   } catch (error) {
-    console.warn("DDG Search failed, trying Google News fallback:", error);
     try {
-      // Fallback: Use Google News RSS as a search engine for headlines/snippets
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
       const response = await fetch(rssUrl);
-      const xml = await response.text();
+      if (!response.ok) throw new Error("RSS fallback connection failed");
       
-      // Minimal regex-based XML parsing to avoid large dependencies
+      const xml = await response.text();
       const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
       const fallbackResults = items.slice(0, 5).map(item => {
         const title = item.match(/<title>(.*?)<\/title>/)?.[1] || "";
         const link = item.match(/<link>(.*?)<\/link>/)?.[1] || "";
         const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
         return {
-          title: title.replace(/ - .*/, ""), // Clean source from title
+          title: title.replace(/ - .*/, ""), 
           url: link,
-          snippet: `Published: ${pubDate}. Latest news finding for ${query}.`
+          snippet: `Record date: ${pubDate}. Market intelligence for ${query}.`
         };
       });
 
       return NextResponse.json(fallbackResults);
     } catch (fallbackError) {
-      console.error("All search methods failed:", fallbackError);
       return NextResponse.json([], { 
         status: 200, 
-        headers: { "X-Search-Error": "Rate-limited and fallback failed" } 
+        headers: { "X-Search-Status": "Service degradation; fallback failed" } 
       });
     }
   }

@@ -16,13 +16,12 @@ const KNOWN_TICKERS: Record<string, string> = {
 };
 
 function formatIndianCurrency(num: number): string {
-  // Assuming num is in Rupees
-  if (num >= 10000000) { // 1 Crore = 10,000,000
+  if (num >= 10000000) {
     return (num / 10000000).toFixed(2) + " Cr";
-  } else if (num >= 100000) { // 1 Lakh = 100,000
+  } else if (num >= 100000) {
     return (num / 100000).toFixed(2) + " L";
   }
-  return num.toLocaleString(); // For smaller amounts, just format with commas
+  return num.toLocaleString();
 }
 
 const MOCK_DATA: Record<string, Partial<FinancialData>> = {
@@ -30,9 +29,9 @@ const MOCK_DATA: Record<string, Partial<FinancialData>> = {
     price: 1650.45,
     change: -12.30,
     changePercent: -0.74,
-    marketCap: "6,85,000 Cr", // Approx 6.85 Trillion INR
+    marketCap: "6,85,000 Cr",
     peRatio: 25.4,
-    revenue: "1,54,000 Cr", // Approx 1.54 Trillion INR
+    revenue: "1,54,000 Cr",
     dividendYield: 2.15,
   },
   "AAPL": {
@@ -48,10 +47,8 @@ const MOCK_DATA: Record<string, Partial<FinancialData>> = {
 
 async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData> | null> {
   try {
-    // Screener uses the base symbol without .NS or .BO
     const symbol = ticker.split('.')[0].toUpperCase();
     const url = `https://www.screener.in/company/${symbol}/`;
-    console.log(`Fetching Screener data for ${symbol} from ${url}`);
     
     const response = await fetch(url, {
       headers: {
@@ -73,7 +70,6 @@ async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData>
     const peRatio = extractMetric("Stock P/E");
     const divYield = extractMetric("Dividend Yield");
 
-    // Extract Revenue (Sales) from the Profit & Loss table (latest year)
     const salesRegex = /Sales[\s\S]*?<\/button>[\s\S]*?<\/td>([\s\S]*?)<\/tr>/i;
     const salesRow = html.match(salesRegex);
     let revenueCr = null;
@@ -96,7 +92,6 @@ async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData>
       changePercent: 0,
     };
   } catch (error) {
-    console.warn("Screener fetch failed:", error);
     return null;
   }
 }
@@ -107,12 +102,11 @@ export async function POST(request: Request) {
 
     if (!ticker || typeof ticker !== "string") {
       return NextResponse.json(
-        { error: "Missing or invalid 'ticker' parameter" },
+        { error: "Invalid ticker identifier" },
         { status: 400 }
       );
     }
 
-    // Try hardcoded fallback if it looks like a name instead of a ticker
     const lowerCaseName = ticker.toLowerCase().trim();
     if (KNOWN_TICKERS[lowerCaseName]) {
       ticker = KNOWN_TICKERS[lowerCaseName];
@@ -120,11 +114,9 @@ export async function POST(request: Request) {
 
     const cleanTicker = ticker.toUpperCase().replace(/[^A-Z0-9.]/g, '');
     
-    // PRIORITY 1: If it's an Indian stock, try Screener.in first (highly reliable for India)
     if (cleanTicker.includes(".NS") || cleanTicker.includes(".BO") || lowerCaseName === "infosys") {
       const screenerData = await fetchScreenerData(cleanTicker);
       if (screenerData) {
-        console.log("Using Screener.in data for", cleanTicker);
         return NextResponse.json({
           ticker: cleanTicker,
           companyName: cleanTicker,
@@ -136,16 +128,11 @@ export async function POST(request: Request) {
 
     let quote: any = null;
     try {
-      // Dynamic import for better Next.js compatibility
       const { default: yahooFinance } = await import("yahoo-finance2");
       quote = await yahooFinance.quote(cleanTicker);
     } catch (apiError) {
-      console.warn(`API fetch failed for ${cleanTicker}, trying fallbacks/mock:`, apiError);
-      
-      // PRIORITY 2: If API fails, try Screener as fallback for non-Indian stocks too (if it exists there)
       const screenerFallback = await fetchScreenerData(cleanTicker);
       if (screenerFallback) {
-        console.log("Using Screener.in data as fallback for", cleanTicker);
         return NextResponse.json({
           ticker: cleanTicker,
           companyName: cleanTicker,
@@ -154,9 +141,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // PRIORITY 3: If still no data, try the MOCK data for popular stocks
       if (MOCK_DATA[cleanTicker]) {
-        console.log("Using high-resiliency mock data for", cleanTicker);
         return NextResponse.json({
           ticker: cleanTicker,
           companyName: cleanTicker,
@@ -168,7 +153,7 @@ export async function POST(request: Request) {
       throw apiError;
     }
 
-    if (!quote) throw new Error("No data returned");
+    if (!quote) throw new Error("Null data from provider");
 
     const isINR = quote.currency === "INR";
     const financialData: FinancialData = {
@@ -192,10 +177,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(financialData);
   } catch (error) {
-    console.error("Financial tool error:", error);
     return NextResponse.json(
       {
-        error: `Financial data unavailable: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Financial pipeline failure: ${error instanceof Error ? error.message : String(error)}`,
       },
       { status: 500 }
     );

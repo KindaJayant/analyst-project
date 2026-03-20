@@ -14,83 +14,65 @@ const VALID_TOOLS: ToolName[] = ["search", "financials", "news"];
 
 function createSystemPrompt(company: string): string {
   const tools = getToolDescriptionsForPrompt();
-  return `You are an autonomous research analyst agent. Your task is to research "${company}" thoroughly and produce a structured investment/competitive brief.
+  return `You are a professional autonomous research analyst. Your objective is to research "${company}" and produce a structured, high-fidelity investment brief.
 
-You have access to the following tools:
+## Tools
 ${tools}
 
-## Your Process
-1. PLAN: Create a research plan with 4-6 steps
-2. ACT: For each step, call the appropriate tool
-3. OBSERVE: Read the tool output carefully
-4. REFLECT: Decide if the result is sufficient or if you need to retry with a different query
-5. REPEAT: Until all research is complete
-6. SYNTHESIZE: Compile everything into a final structured report
+## Protocol
+1. Initialize research plan (4-6 steps).
+2. Execute tool calls sequentially.
+3. Observe results and verify data integrity.
+4. Reflect on findings; retry with alternate queries if results are insufficient.
+5. Finalize synthesis into a structured report.
 
-## Important Rules
-- Always respond with valid JSON only — no markdown, no explanation outside JSON
-- If a tool returns empty results, retry with a different query before giving up
-- For financial data, prioritize Indian exchanges (NSE/BSE) first if the company is Indian. Use suffixes like .NS (NSE) or .BO (BSE).
-- If you know the company's ticker (e.g. AAPL for Apple, INFY.NS for Infosys), call the \`financials\` tool DIRECTLY. Do not search for the ticker unless you are completely unsure.
-- For Indian companies, use the Indian numbering system (Lakhs/L and Crores/Cr) for financial figures in the final report as provided by the tools.
-- If Indian data is unavailable, then fallback to NYSE/NASDAQ.
-- Research competitors by searching for them specifically
-- Be thorough — gather real data, don't make things up
+## Critical Instructions
+- Response must be VALID JSON only. No explanations, no markdown outside JSON.
+- If a tool returns no data, adjust parameters and retry.
+- For Indian assets, prioritize NSE/BSE data (use .NS or .BO suffixes).
+- Use professional financial terminology. No emojis or informal language in logs or report content.
+- Ensure all figures are attributed to tools and not hallucinated.
 
-## Response Formats
+## Operational JSON Formats
 
-When planning, respond with:
-{"action":"plan","plan":["step 1 description","step 2 description",...]}
+Research Plan:
+{"action":"plan","plan":["step 1","step 2",...]}
 
-When calling a tool, respond with:
-{"action":"tool_call","tool":"search|financials|news","args":{"paramName":"value"},"reasoning":"why this tool call"}
+Tool Execution:
+{"action":"tool_call","tool":"search|financials|news","args":{"param":"value"},"reasoning":"professional justification"}
 
-When reflecting on results, respond with:
-{"action":"reflect","assessment":"your assessment","needsRetry":true|false,"retryStrategy":"what to try differently if needed"}
+Assessment:
+{"action":"reflect","assessment":"analytical assessment","needsRetry":true|false,"retryStrategy":"alternative approach if needed"}
 
-When ready to synthesize the final report, respond with:
+Synthesis:
 {"action":"synthesize"}`;
 }
 
-const SYNTHESIS_PROMPT = `Based on all the research gathered, create a comprehensive structured report. Respond with ONLY valid JSON in this exact format:
+const SYNTHESIS_PROMPT = `Generate a formal investment report based on the gathered data.
+Respond with ONLY valid JSON in this exact structure:
 {
-  "company": "Company Name",
+  "company": "Official Company Name",
   "overallSentiment": "Bullish" | "Neutral" | "Bearish",
   "sections": [
-    {"title": "Company Overview", "icon": "🏢", "content": "What the company does, industry, founded, headquarters..."},
-    {"title": "Financial Snapshot", "icon": "📊", "content": "Key metrics: price, market cap, P/E, revenue, margins..."},
-    {"title": "Recent News & Developments", "icon": "📰", "content": "Last 5 significant news items with dates..."},
-    {"title": "Competitive Landscape", "icon": "⚔️", "content": "Top 3 competitors and comparison..."},
-    {"title": "Risk Factors", "icon": "⚠️", "content": "3-5 identified risks (market, regulatory, operational)..."},
-    {"title": "Investment/Opportunity Summary", "icon": "💡", "content": "Bull case, Bear case, Overall sentiment..."}
+    {"title": "Company Overview", "icon": "OVERVIEW", "content": "Comprehensive business description, industry position, and headquarters."},
+    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "Price, market cap, P/E, revenue, and key margins."},
+    {"title": "Recent News & Developments", "icon": "NEWS", "content": "Summary of the last 5 significant corporate events or news items."},
+    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "Primary competitors and market positioning analysis."},
+    {"title": "Risk Factors", "icon": "RISK", "content": "Analysis of market, regulatory, and operational risks."},
+    {"title": "Investment Summary", "icon": "SUMMARY", "content": "Consolidated Bull/Bear case and valuation sentiment."}
   ]
 }
 
-IMPORTANT: Respond with ONLY the JSON object, no markdown formatting, no code fences, no extra text. If you encounter errors, retry with a different tool query. Prioritize Indian market data for Indian companies.`;
+No preamble, no code fences, no emojis. Only the JSON object.`;
 
 function parseJSON(text: string): Record<string, unknown> | null {
   try {
-    // Try direct parse first
-    return JSON.parse(text);
+    const cleaned = text.trim();
+    // Try extraction if code fences exist
+    const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const toParse = jsonMatch ? jsonMatch[1].trim() : cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned;
+    return JSON.parse(toParse);
   } catch {
-    // Try extracting JSON from markdown code blocks
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[1].trim());
-      } catch {
-        return null;
-      }
-    }
-    // Try finding JSON object in the text
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      try {
-        return JSON.parse(objectMatch[0]);
-      } catch {
-        return null;
-      }
-    }
     return null;
   }
 }
@@ -121,12 +103,11 @@ export async function* runAgentLoop(
   };
 
   try {
-    // --- PHASE 1: Planning ---
-    yield emitStep("plan", `🧠 Starting research on "${company}"...`);
+    yield emitStep("plan", `Initializing research pipeline for ${company}...`);
 
     conversationHistory.push({
       role: "user",
-      text: `Research the company "${company}". Start by creating a research plan.`,
+      text: `Analyze "${company}". Begin with a research plan.`,
     });
 
     const planResponse = await callGemini(systemPrompt, conversationHistory);
@@ -137,23 +118,21 @@ export async function* runAgentLoop(
       const plan = planData.plan as string[];
       yield emitStep(
         "plan",
-        `📋 Research plan created with ${plan.length} steps:\n${plan
-          .map((s, i) => `  ${i + 1}. ${s}`)
+        `Research plan established (${plan.length} steps):\n${plan
+          .map((s, i) => `[0${i + 1}] ${s}`)
           .join("\n")}`
       );
     } else {
-      yield emitStep("plan", "📋 Research plan created. Executing...");
+      yield emitStep("plan", "Research plan established. Commencing data acquisition.");
     }
 
-    // --- PHASE 2: Execution Loop ---
     let iterations = 0;
-
     while (iterations < MAX_STEPS) {
       iterations++;
 
       conversationHistory.push({
         role: "user",
-        text: "What is your next action? If you have gathered enough information for all sections of the report, respond with {\"action\":\"synthesize\"}. Otherwise, call the next tool.",
+        text: "Proceed to next action. If data is sufficient for all report sections, respond with {\"action\":\"synthesize\"}. Otherwise, execute next tool call.",
       });
 
       const actionResponse = await callGemini(
@@ -164,34 +143,29 @@ export async function* runAgentLoop(
 
       const actionData = parseJSON(actionResponse);
       if (!actionData) {
-        yield emitStep(
-          "error",
-          "⚠️ Could not parse agent response. Retrying..."
-        );
+        yield emitStep("error", "Failed to parse system response. Re-evaluating...");
         conversationHistory.push({
           role: "user",
-          text: "Your response was not valid JSON. Please respond with only valid JSON as specified in the instructions.",
+          text: "Invalid response format. Adhere to the specified JSON schema.",
         });
         continue;
       }
 
-      // Check for synthesis
       if (actionData.action === "synthesize") {
-        yield emitStep("synthesis", "✨ All research complete. Synthesizing final report...");
+        yield emitStep("synthesis", "Information gathering complete. Synthesizing final investment brief.");
         break;
       }
 
-      // Handle tool calls
       if (actionData.action === "tool_call") {
         const toolName = actionData.tool as string;
         const args = actionData.args as Record<string, string>;
         const reasoning = (actionData.reasoning as string) || "";
 
         if (!VALID_TOOLS.includes(toolName as ToolName)) {
-          yield emitStep("error", `⚠️ Unknown tool: ${toolName}`);
+          yield emitStep("error", `Configuration error: invalid tool ${toolName}`);
           conversationHistory.push({
             role: "user",
-            text: `Tool "${toolName}" is not available. Available tools: ${VALID_TOOLS.join(", ")}`,
+            text: `Tool "${toolName}" is not categorized. Categorized tools: ${VALID_TOOLS.join(", ")}`,
           });
           continue;
         }
@@ -202,43 +176,34 @@ export async function* runAgentLoop(
           reasoning,
         };
 
-        // Emit what we're doing
-        const toolEmojis: Record<ToolName, string> = {
-          search: "🔍",
-          financials: "📊",
-          news: "📰",
-        };
-        const emoji = toolEmojis[toolName as ToolName] || "🔧";
         yield emitStep(
           "tool_call",
-          `${emoji} ${reasoning || `Calling ${toolName} tool...`}`,
+          reasoning || `Executing ${toolName} acquisition...`,
           { toolCall }
         );
 
-        // Call the tool
         const result = await callTool(toolName as ToolName, args);
 
         if (result.success) {
-          yield emitStep("tool_result", `✅ ${toolName} returned results`, {
+          yield emitStep("tool_result", `${toolName.toUpperCase()} data acquired.`, {
             toolResult: result,
           });
           conversationHistory.push({
             role: "user",
-            text: `Tool "${toolName}" returned successfully:\n${JSON.stringify(result.data, null, 2)}\n\nReflect on these results. Are they sufficient? Do you need to retry or call another tool?`,
+            text: `Tool result: ${JSON.stringify(result.data, null, 2).substring(0, 3000)}\n\nAssess sufficiency and determine next operation.`,
           });
         } else {
           yield emitStep(
             "tool_result",
-            `❌ ${toolName} failed: ${result.error}`,
+            `${toolName.toUpperCase()} error: ${result.error}`,
             { toolResult: result }
           );
           conversationHistory.push({
             role: "user",
-            text: `Tool "${toolName}" failed with error: ${result.error}\n\nPlease decide: retry with different parameters, skip this step, or try a different approach.`,
+            text: `Tool result error: ${result.error}\n\nAdjust query parameters or switch tool.`,
           });
         }
 
-        // Get reflection
         const reflectionResponse = await callGemini(
           systemPrompt,
           conversationHistory
@@ -251,25 +216,20 @@ export async function* runAgentLoop(
           const needsRetry = reflectionData.needsRetry as boolean;
           yield emitStep(
             "reflection",
-            `🤔 ${assessment}${needsRetry ? " — will retry with a different approach" : ""}`
+            `${assessment}${needsRetry ? " - recalibrating approach." : ""}`
           );
         }
-
         continue;
       }
 
-      // Handle reflection responses  
       if (actionData.action === "reflect") {
-        const assessment = (actionData.assessment as string) || "";
-        yield emitStep("reflection", `🤔 ${assessment}`);
+        yield emitStep("reflection", (actionData.assessment as string) || "Reflecting on acquired data.");
         continue;
       }
 
-      // Fallback
-      yield emitStep("reflection", "🤔 Processing...");
+      yield emitStep("reflection", "Processing...");
     }
 
-    // --- PHASE 3: Synthesis ---
     conversationHistory.push({
       role: "user",
       text: SYNTHESIS_PROMPT,
@@ -290,10 +250,8 @@ export async function* runAgentLoop(
           (reportData.overallSentiment as "Bullish" | "Neutral" | "Bearish") ||
           "Neutral",
       };
-
       yield { type: "report", report };
     } else {
-      // If JSON parsing fails, try to use the raw text as a fallback
       yield {
         type: "report",
         report: {
@@ -302,8 +260,8 @@ export async function* runAgentLoop(
           overallSentiment: "Neutral",
           sections: [
             {
-              title: "Research Report",
-              icon: "📄",
+              title: "Analysis Report",
+              icon: "REPORT",
               content: synthesisResponse,
             },
           ],
@@ -315,7 +273,7 @@ export async function* runAgentLoop(
   } catch (error) {
     yield {
       type: "error",
-      error: `Agent encountered an error: ${
+      error: `Pipeline interruption: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
