@@ -1,12 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Trading Space palette */
   --color-orange: #FF5B22;
   --color-dark: #000000;
   --color-surface: #111111;
@@ -42,18 +40,12 @@
   * { @apply border-border outline-ring/50; }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans), sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 }
 
-/* ─── Layout & Components ───────────────────────────────── */
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
+/* ─── Styles ────────────────────────────────────────────── */
 
 .card-v3 {
   @apply bg-surface border border-border p-6 transition-all duration-200;
@@ -70,20 +62,6 @@
   @apply bg-surface border border-border px-4 py-3 text-white outline-none focus:border-orange/50 transition-all duration-200;
 }
 
-/* ─── Typography ─────────────────────────────────────────── */
-.title-main {
-  @apply text-5xl md:text-7xl font-bold tracking-tight mb-8;
-}
-
-.label-professional {
-  @apply text-xs font-bold uppercase tracking-widest text-muted;
-}
-
-.stat-value {
-  @apply text-2xl font-bold text-white;
-}
-
-/* ─── Animations ─────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -93,7 +71,6 @@
   animation: fade-in 0.4s ease-out forwards;
 }
 
-/* ─── Scrollbar ───────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333333; }

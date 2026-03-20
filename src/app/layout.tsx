@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "ResearchAgent — AI-Powered Company Research",
+  title: "Trading Space — Autonomous Market Intelligence",
   description:
-    "Enter any company name and let our autonomous AI agent research it from scratch — browsing the web, pulling financial data, reading news, and generating a structured investment brief.",
+    "Advanced autonomous systems for high-fidelity market research and financial synthesis.",
 };
 
 export default function RootLayout({
@@ -21,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} font-sans antialiased selection:bg-primary/20`}>
+      <body className={`${inter.variable} font-sans antialiased text-white bg-black`}>
         {children}
       </body>
     </html>
