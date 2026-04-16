@@ -6,7 +6,7 @@
 
 ---
 
-## ✨ What It Does
+## What It Does
 
 ResearchAgent is a fully autonomous research assistant powered by **Google Gemini 2.0 Flash**. You type a company name (e.g. `TCS`, `BLS`, `Shilchar Technologies`) and the agent:
 
