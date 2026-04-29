@@ -61,14 +61,16 @@ export function getToolDescriptionsForPrompt(): string {
     .join("\n");
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
 export async function callTool(
   tool: ToolName,
-  args: Record<string, string>
+  args: Record<string, string>,
+  baseUrl?: string
 ): Promise<ToolResult> {
   try {
-    const response = await fetch(`${BASE_URL}/api/tools/${tool}`, {
+    const resolvedBaseUrl =
+      baseUrl || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+    const response = await fetch(`${resolvedBaseUrl}/api/tools/${tool}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),

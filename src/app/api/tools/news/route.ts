@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Parser from "rss-parser";
+import { exaSearch } from "@/lib/exa";
 import type { NewsItem } from "@/types";
 
 const parser = new Parser();
@@ -13,6 +14,34 @@ export async function POST(request: Request) {
         { error: "Missing or invalid 'company' parameter" },
         { status: 400 }
       );
+    }
+
+    if (process.env.EXA_API_KEY) {
+      const exaResults = await exaSearch(company, {
+        category: "news",
+        numResults: 8,
+      });
+
+      if (exaResults.length > 0) {
+        const newsItems: NewsItem[] = exaResults.map((result) => {
+          let source = "Exa";
+
+          try {
+            source = new URL(result.url).hostname.replace(/^www\./, "");
+          } catch {
+            source = result.author || "Exa";
+          }
+
+          return {
+            title: result.title,
+            date: result.publishedDate || new Date().toISOString(),
+            source,
+            url: result.url,
+          };
+        });
+
+        return NextResponse.json(newsItems);
+      }
     }
 
     const encodedCompany = encodeURIComponent(company);

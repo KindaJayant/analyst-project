@@ -1,43 +1,101 @@
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = "google/gemini-2.0-flash-001";
+const GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent";
 
-const apiKey = process.env.OPENROUTER_API_KEY;
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-if (!apiKey) {
-  throw new Error("OPENROUTER_API_KEY environment variable is not set");
+function formatGeminiError(status: number, errorBody: string): string {
+  if (status !== 429) {
+    return `Gemini API error (${status}): ${errorBody}`;
+  }
+
+  let retrySeconds: string | null = null;
+
+  try {
+    const parsed = JSON.parse(errorBody);
+    const retryDelay = parsed?.error?.details?.find(
+      (detail: { ["@type"]?: string }) =>
+        detail?.["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
+    )?.retryDelay;
+
+    if (typeof retryDelay === "string") {
+      retrySeconds = retryDelay.replace("s", " seconds");
+    }
+  } catch {
+    retrySeconds = null;
+  }
+
+  return retrySeconds
+    ? `Gemini API quota exceeded. Please retry in about ${retrySeconds}, or switch to a Gemini project with available quota.`
+    : "Gemini API quota exceeded. Please retry shortly, or switch to a Gemini project with available quota.";
 }
 
 export async function callGemini(
   systemPrompt: string,
   conversationHistory: { role: "user" | "model"; text: string }[]
 ): Promise<string> {
-  const messages = [
-    { role: "system" as const, content: systemPrompt },
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
+  const contents = [
     ...conversationHistory.map((msg) => ({
-      role: (msg.role === "model" ? "assistant" : "user") as "user" | "assistant",
-      content: msg.text,
+      role: msg.role === "model" ? "model" : "user",
+      parts: [{ text: msg.text }],
     })),
   ];
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+  const body = {
+    systemInstruction: {
+      parts: [{ text: systemPrompt }],
     },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: 4096,
-    }),
-  });
+    contents,
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 2048,
+      topP: 0.9,
+    },
+  };
 
-  if (!response.ok) {
+  const maxAttempts = 4;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const text =
+        data?.candidates?.[0]?.content?.parts
+          ?.map((part: { text?: string }) => part.text || "")
+          .join("") || "";
+
+      if (!text) {
+        throw new Error("Gemini API returned an empty response");
+      }
+
+      return text;
+    }
+
     const errorBody = await response.text();
-    throw new Error(`OpenRouter API error (${response.status}): ${errorBody}`);
+    const shouldRetry =
+      response.status === 429 || response.status === 500 || response.status === 503;
+
+    if (!shouldRetry || attempt === maxAttempts) {
+      throw new Error(formatGeminiError(response.status, errorBody));
+    }
+
+    const backoffMs = 1500 * attempt + Math.floor(Math.random() * 500);
+    await sleep(backoffMs);
   }
 
-  const data = await response.json();
-  return data.choices[0]?.message?.content || "";
+  throw new Error("Gemini API failed after multiple retry attempts");
 }

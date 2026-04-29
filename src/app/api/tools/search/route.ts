@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { exaSearch } from "@/lib/exa";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -12,6 +13,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (process.env.EXA_API_KEY) {
+      const exaResults = await exaSearch(query, { numResults: 5 });
+      if (exaResults.length > 0) {
+        return NextResponse.json(
+          exaResults.map((result) => ({
+            title: result.title,
+            url: result.url,
+            snippet: result.snippet,
+          }))
+        );
+      }
+    }
+
     const { search } = await import("duck-duck-scrape");
     let results;
     let retries = 0;

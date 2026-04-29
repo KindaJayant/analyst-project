@@ -9,7 +9,7 @@ import {
   ReportSection,
 } from "@/types";
 
-const MAX_STEPS = 12;
+const MAX_STEPS = 8;
 const VALID_TOOLS: ToolName[] = ["search", "financials", "news"];
 
 function createSystemPrompt(company: string): string {
@@ -85,7 +85,8 @@ function parseJSON(text: string): Record<string, unknown> | null {
 }
 
 export async function* runAgentLoop(
-  company: string
+  company: string,
+  baseUrl?: string
 ): AsyncGenerator<AgentMessage> {
   let stepId = 0;
   const conversationHistory: { role: "user" | "model"; text: string }[] = [];
@@ -112,34 +113,15 @@ export async function* runAgentLoop(
   try {
     yield emitStep("plan", `Initializing research pipeline for ${company}...`);
 
-    // First step: establish a research plan
     const initialPrompt = `RESEARCH CONTEXT: The user wants a professional investment brief for "${company}".
 Identify the correct stock ticker if not provided (e.g., for Indian companies use .NS/.BO).
-Establish a high-fidelity 6-step research plan.
-FORMAT: Use [01] to [06] markers for the plan.
-Example: Research plan established: [01] Identify ticker... [02] Gather financials...`;
+Begin with the highest-confidence next action immediately. Prefer gathering ticker, financials, and news efficiently before synthesis.`;
 
-    // Add initial system instruction as a message to guide the first turn
-    const currentSteps: { role: "user" | "model"; text: string }[] = [
-      { role: "user", text: initialPrompt }
-    ];
-
-    const planResponse = await callGemini(systemPrompt, currentSteps);
-    conversationHistory.push({ role: "user", text: initialPrompt }); // Add to history for subsequent turns
-    conversationHistory.push({ role: "model", text: planResponse });
-
-    const planData = parseJSON(planResponse);
-    if (planData && planData.action === "plan" && Array.isArray(planData.plan)) {
-      const plan = planData.plan as string[];
-      yield emitStep(
-        "plan",
-        `Research plan established (${plan.length} steps):\n${plan
-          .map((s, i) => `[0${i + 1}] ${s}`)
-          .join("\n")}`
-      );
-    } else {
-      yield emitStep("plan", "Research plan established. Commencing data acquisition.");
-    }
+    conversationHistory.push({ role: "user", text: initialPrompt });
+    yield emitStep(
+      "plan",
+      "Research plan established. Beginning direct data acquisition to stay within free-tier rate limits."
+    );
 
     let iterations = 0;
     while (iterations < MAX_STEPS) {
@@ -197,7 +179,7 @@ Example: Research plan established: [01] Identify ticker... [02] Gather financia
           { toolCall }
         );
 
-        const result = await callTool(toolName as ToolName, args);
+        const result = await callTool(toolName as ToolName, args, baseUrl);
 
         if (result.success) {
           yield emitStep("tool_result", `${toolName.toUpperCase()} data acquired.`, {
@@ -219,21 +201,6 @@ Example: Research plan established: [01] Identify ticker... [02] Gather financia
           });
         }
 
-        const reflectionResponse = await callGemini(
-          systemPrompt,
-          conversationHistory
-        );
-        conversationHistory.push({ role: "model", text: reflectionResponse });
-
-        const reflectionData = parseJSON(reflectionResponse);
-        if (reflectionData && reflectionData.action === "reflect") {
-          const assessment = (reflectionData.assessment as string) || "";
-          const needsRetry = reflectionData.needsRetry as boolean;
-          yield emitStep(
-            "reflection",
-            `${assessment}${needsRetry ? " - recalibrating approach." : ""}`
-          );
-        }
         continue;
       }
 

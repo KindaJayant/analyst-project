@@ -5,6 +5,7 @@ export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
     const { company } = await request.json();
+    const origin = new URL(request.url).origin;
 
     if (!company || typeof company !== "string") {
       return new Response(
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const message of runAgentLoop(company)) {
+          for await (const message of runAgentLoop(company, origin)) {
             const line = JSON.stringify(message) + "\n";
             controller.enqueue(encoder.encode(line));
           }
