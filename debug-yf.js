@@ -1,12 +1,12 @@
-const yahooFinance = require("yahoo-finance2").default;
+import yahooFinance from "yahoo-finance2";
 
 async function test() {
   console.log("--- Testing Yahoo Finance ---");
   try {
     const quote = await yahooFinance.quote("INFY");
     console.log("INFY (NYSE) success:", quote.symbol, quote.regularMarketPrice);
-  } catch (e) {
-    console.error("INFY (NYSE) failed:", e);
+  } catch (error) {
+    console.error("INFY (NYSE) failed:", error);
   }
 }
 

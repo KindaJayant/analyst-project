@@ -7,6 +7,9 @@ import {
   ToolName,
   ResearchReport,
   ReportSection,
+  SearchResult,
+  FinancialData,
+  NewsItem,
 } from "@/types";
 
 const MAX_STEPS = 8;
@@ -56,17 +59,17 @@ Respond with ONLY valid JSON in this exact structure:
   "company": "Official Company Name",
   "overallSentiment": "Bullish" | "Neutral" | "Bearish",
   "sections": [
-    {"title": "Company Overview", "icon": "OVERVIEW", "content": "• Business description and scale...\\n• Core industry position...\\n• Strategic focus..."},
-    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "• Price and valuation context...\\n• Revenue/Profitability trends...\\n• Balance sheet health (debt/cash)..."},
-    {"title": "Recent News & Developments", "icon": "NEWS", "content": "• Key event 1 (date)...\\n• Key event 2 (date)..."},
-    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "• Market share vs peers...\\n• Peer 1 comparison...\\n• Peer 2 comparison..."},
-    {"title": "Risk Factors", "icon": "RISK", "content": "• Primary risk 1...\\n• Primary risk 2...\\n• Primary risk 3..."},
-    {"title": "Investment Summary", "icon": "SUMMARY", "content": "• Consolidated Bull case...\\n• Consolidated Bear case...\\n• Final investment verdict..."}
+    {"title": "Company Overview", "icon": "OVERVIEW", "content": "- Business description and scale...\\n- Core industry position...\\n- Strategic focus..."},
+    {"title": "Financial Snapshot", "icon": "FINANCIALS", "content": "- Price and valuation context...\\n- Revenue/Profitability trends...\\n- Balance sheet health (debt/cash)..."},
+    {"title": "Recent News & Developments", "icon": "NEWS", "content": "- Key event 1 (date)...\\n- Key event 2 (date)..."},
+    {"title": "Competitive Landscape", "icon": "COMPETITION", "content": "- Market share vs peers...\\n- Peer 1 comparison...\\n- Peer 2 comparison..."},
+    {"title": "Risk Factors", "icon": "RISK", "content": "- Primary risk 1...\\n- Primary risk 2...\\n- Primary risk 3..."},
+    {"title": "Investment Summary", "icon": "SUMMARY", "content": "- Consolidated Bull case...\\n- Consolidated Bear case...\\n- Final investment verdict..."}
   ]
 }
 
 CRITICAL FORMATTING:
-1. Use ONLY bullet points (•) for content.
+1. Use ONLY bullet points prefixed with "- " for content.
 2. DO NOT use newlines inside a single bullet point.
 3. Use exactly one bullet point per line.
 4. If a company is in distress (high debt, negative growth, regulatory issues), the sentiment MUST be BEARISH. Do not be overly neutral.
@@ -82,6 +85,204 @@ function parseJSON(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function formatBullets(items: string[]): string {
+  return items.filter(Boolean).map((item) => `- ${item}`).join("\n");
+}
+
+function toDisplayNumber(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === "") {
+    return "Not available";
+  }
+
+  return String(value);
+}
+
+function inferSentiment(financials: FinancialData | null): "Bullish" | "Neutral" | "Bearish" {
+  if (!financials) {
+    return "Neutral";
+  }
+
+  let score = 0;
+
+  if ((financials.changePercent ?? 0) > 1.5) score += 1;
+  if ((financials.changePercent ?? 0) < -1.5) score -= 1;
+  if ((financials.profitMargin ?? 0) > 15) score += 1;
+  if ((financials.profitMargin ?? 0) < 0) score -= 2;
+  if ((financials.peRatio ?? 0) > 45) score -= 1;
+  if ((financials.peRatio ?? 0) > 0 && (financials.peRatio ?? 0) < 25) score += 1;
+
+  if (typeof financials.analystRating === "string") {
+    const rating = financials.analystRating.toLowerCase();
+    if (rating.includes("buy")) score += 1;
+    if (rating.includes("sell")) score -= 1;
+  }
+
+  if (score >= 2) return "Bullish";
+  if (score <= -2) return "Bearish";
+  return "Neutral";
+}
+
+function buildFallbackSections(
+  company: string,
+  searchResults: SearchResult[],
+  financials: FinancialData | null,
+  news: NewsItem[]
+): ReportSection[] {
+  const companyName = financials?.companyName || company;
+  const overviewPoints = [
+    `${companyName} is being analysed using a deterministic fallback workflow built on live search, financial, and news tools.`,
+    searchResults[0]?.snippet || `${companyName} appears in current web results, indicating active public coverage and accessible market context.`,
+    searchResults[1]?.title
+      ? `Recent web context highlights ${searchResults[1].title}.`
+      : `Ticker resolution currently points to ${financials?.ticker || company}, which is used for downstream financial lookups.`,
+    news[0]?.title
+      ? `News flow remains active, with the latest headline suggesting: ${news[0].title}.`
+      : `No fresh headline feed was available during this run, so qualitative context is lighter than normal.`,
+  ];
+
+  const financialPoints = [
+    `Ticker tracked: ${financials?.ticker || company}.`,
+    `Price: ${toDisplayNumber(financials?.price)} ${financials?.currency || ""}`.trim(),
+    `Day move: ${toDisplayNumber(financials?.change)} (${toDisplayNumber(financials?.changePercent)}%).`,
+    `Market cap / P-E: ${toDisplayNumber(financials?.marketCap)} / ${toDisplayNumber(financials?.peRatio)}.`,
+    `Revenue / Dividend yield: ${toDisplayNumber(financials?.revenue)} / ${toDisplayNumber(financials?.dividendYield)}.`,
+  ];
+
+  const newsPoints =
+    news.slice(0, 5).map((item) => `${item.date.slice(0, 16)} | ${item.source}: ${item.title}`) || [];
+
+  const competitionPoints = [
+    searchResults[0]?.title
+      ? `Search positioning references ${searchResults[0].title}, which helps anchor current market narrative.`
+      : `${companyName} remains identifiable in public search results, but peer coverage was limited in this run.`,
+    searchResults[1]?.snippet
+      ? `Secondary context suggests: ${searchResults[1].snippet}`
+      : `A fuller peer benchmark would benefit from an additional sector-specific comparison pass.`,
+    `The toolchain currently prioritises company discovery, live pricing, and recent developments over exhaustive peer-modeling.`,
+    `Use this section as directional positioning rather than a full market-share study when the fallback mode is active.`,
+  ];
+
+  const riskPoints = [
+    `Fallback mode was triggered because the primary LLM provider was unavailable, so narrative synthesis is less nuanced than the standard agent path.`,
+    financials?.peRatio && financials.peRatio > 45
+      ? `Valuation appears elevated relative to a conservative baseline, which raises downside sensitivity if growth slows.`
+      : `Valuation does not appear obviously stretched from the available quick-look metrics alone.`,
+    (financials?.changePercent ?? 0) < -2
+      ? `Recent price weakness suggests the market may already be discounting near-term execution or sentiment risks.`
+      : `Short-term price action does not currently signal an acute stress event from the limited snapshot.`,
+    news.length === 0
+      ? `Missing fresh news flow reduces confidence in event-driven conclusions for this run.`
+      : `Headline-based inputs can skew toward recent noise, so major conclusions should still be cross-checked.`,
+  ];
+
+  const sentiment = inferSentiment(financials);
+  const summaryPoints = [
+    sentiment === "Bullish"
+      ? `Bull case: available price, valuation, and rating signals lean constructive for ${companyName}.`
+      : `Bull case: the company still has enough visible market presence and data availability to support deeper diligence.`,
+    sentiment === "Bearish"
+      ? `Bear case: current momentum, valuation, or profitability signals are weak enough to justify a cautious stance.`
+      : `Bear case: this fallback report is structurally thinner than the full autonomous synthesis path, so conviction should stay moderate.`,
+    `Final stance: ${sentiment}. Re-run with a healthy LLM credential to restore the full planning and synthesis loop.`,
+  ];
+
+  return [
+    { title: "Company Overview", icon: "OVERVIEW", content: formatBullets(overviewPoints) },
+    { title: "Financial Snapshot", icon: "FINANCIALS", content: formatBullets(financialPoints) },
+    {
+      title: "Recent News & Developments",
+      icon: "NEWS",
+      content: formatBullets(newsPoints.length > 0 ? newsPoints : [`No recent headlines were returned for ${companyName} during this run.`]),
+    },
+    { title: "Competitive Landscape", icon: "COMPETITION", content: formatBullets(competitionPoints) },
+    { title: "Risk Factors", icon: "RISK", content: formatBullets(riskPoints) },
+    { title: "Investment Summary", icon: "SUMMARY", content: formatBullets(summaryPoints) },
+  ];
+}
+
+async function* runDeterministicFallback(
+  company: string,
+  emitStep: (
+    type: AgentStep["type"],
+    content: string,
+    extra?: Partial<AgentStep>
+  ) => AgentMessage,
+  baseUrl?: string
+): AsyncGenerator<AgentMessage> {
+  yield emitStep(
+    "reflection",
+    "Primary LLM path unavailable. Switching to deterministic research mode."
+  );
+
+  const searchCall: ToolCall = {
+    tool: "search",
+    args: { query: `${company} company overview stock` },
+    reasoning: "Gather baseline company context from public web results.",
+  };
+  yield emitStep("tool_call", searchCall.reasoning, { toolCall: searchCall });
+  const searchResult = await callTool("search", searchCall.args, baseUrl);
+  yield emitStep(
+    "tool_result",
+    searchResult.success ? "SEARCH data acquired." : `SEARCH error: ${searchResult.error}`,
+    { toolResult: searchResult }
+  );
+
+  const financialCall: ToolCall = {
+    tool: "financials",
+    args: { ticker: company },
+    reasoning: "Resolve live financial context for the requested company or ticker.",
+  };
+  yield emitStep("tool_call", financialCall.reasoning, { toolCall: financialCall });
+  const financialResult = await callTool("financials", financialCall.args, baseUrl);
+  yield emitStep(
+    "tool_result",
+    financialResult.success
+      ? "FINANCIALS data acquired."
+      : `FINANCIALS error: ${financialResult.error}`,
+    { toolResult: financialResult }
+  );
+
+  const newsCall: ToolCall = {
+    tool: "news",
+    args: { company },
+    reasoning: "Pull the most recent company-specific headlines.",
+  };
+  yield emitStep("tool_call", newsCall.reasoning, { toolCall: newsCall });
+  const newsResult = await callTool("news", newsCall.args, baseUrl);
+  yield emitStep(
+    "tool_result",
+    newsResult.success ? "NEWS data acquired." : `NEWS error: ${newsResult.error}`,
+    { toolResult: newsResult }
+  );
+
+  const searchResults = searchResult.success && Array.isArray(searchResult.data)
+    ? (searchResult.data as SearchResult[])
+    : [];
+  const financials =
+    financialResult.success &&
+    financialResult.data &&
+    !Array.isArray(financialResult.data)
+      ? (financialResult.data as FinancialData)
+      : null;
+  const newsItems = newsResult.success && Array.isArray(newsResult.data)
+    ? (newsResult.data as NewsItem[])
+    : [];
+
+  const report: ResearchReport = {
+    company: financials?.companyName || company,
+    generatedAt: new Date().toISOString(),
+    overallSentiment: inferSentiment(financials),
+    sections: buildFallbackSections(company, searchResults, financials, newsItems),
+  };
+
+  yield emitStep(
+    "synthesis",
+    "Deterministic synthesis complete. Delivering structured fallback report."
+  );
+  yield { type: "report", report };
+  yield { type: "done" };
 }
 
 export async function* runAgentLoop(
@@ -253,11 +454,20 @@ Begin with the highest-confidence next action immediately. Prefer gathering tick
 
     yield { type: "done" };
   } catch (error) {
-    yield {
-      type: "error",
-      error: `Pipeline interruption: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    };
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+
+    try {
+      yield* runDeterministicFallback(company, emitStep, baseUrl);
+    } catch (fallbackError) {
+      yield {
+        type: "error",
+        error: `Pipeline interruption: ${errorMessage}. Fallback failure: ${
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : String(fallbackError)
+        }`,
+      };
+    }
   }
 }

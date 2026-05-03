@@ -47,6 +47,21 @@ const MOCK_DATA: Record<string, Partial<FinancialData>> = {
   }
 };
 
+type QuoteLike = {
+  longName?: string;
+  shortName?: string;
+  regularMarketPrice?: number | null;
+  regularMarketChange?: number | null;
+  regularMarketChangePercent?: number | null;
+  currency?: string;
+  marketCap?: number | null;
+  trailingPE?: number | null;
+  dividendYield?: number | null;
+  fiftyTwoWeekHigh?: number | null;
+  fiftyTwoWeekLow?: number | null;
+  averageAnalystRating?: string | null;
+};
+
 async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData> | null> {
   try {
     const symbol = ticker.split('.')[0].toUpperCase();
@@ -93,7 +108,7 @@ async function fetchScreenerData(ticker: string): Promise<Partial<FinancialData>
       change: 0,
       changePercent: 0,
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -128,10 +143,10 @@ export async function POST(request: Request) {
       }
     }
 
-    let quote: any = null;
+    let quote: QuoteLike | null = null;
     try {
       const { default: yahooFinance } = await import("yahoo-finance2");
-      quote = await yahooFinance.quote(cleanTicker);
+      quote = (await yahooFinance.quote(cleanTicker)) as QuoteLike;
     } catch (apiError) {
       const screenerFallback = await fetchScreenerData(cleanTicker);
       if (screenerFallback) {

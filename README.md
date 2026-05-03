@@ -2,7 +2,7 @@
 
 > Enter any company name or stock ticker. An autonomous AI agent researches it from scratch — browsing the web, pulling live financial data, reading the latest news — and delivers a structured investment brief in under a minute.
 
-**Zero paid APIs.** The only credential you need is a free [OpenRouter](https://openrouter.ai/keys) key.
+**Zero paid APIs.** The primary credential is a Gemini API key. OpenRouter is optional as a backup path.
 
 ---
 
@@ -25,7 +25,7 @@ The entire pipeline runs server-side in Next.js API routes — no external backe
 |-------|-----------|-------|
 | Framework | Next.js 16 (App Router) + TypeScript | Server components + API routes |
 | Styling | Tailwind CSS v4 + shadcn/ui | Dark-mode first |
-| LLM | Google Gemini 2.0 Flash via OpenRouter | Free tier available |
+| LLM | Google Gemini 2.0 Flash | Primary path with direct Gemini API |
 | Financial Data | `yahoo-finance2` + Screener.in scraper | No API key needed |
 | Web Search | `duck-duck-scrape` → Google News RSS fallback | Layered resilience |
 | News | Google News RSS via `rss-parser` | Dedicated news tool |
@@ -113,7 +113,8 @@ Every analysis produces six sections:
 ### Prerequisites
 
 - Node.js 18+
-- A free [OpenRouter](https://openrouter.ai/keys) API key
+- A Gemini API key
+- Optional: an [OpenRouter](https://openrouter.ai/keys) key as a backup path
 
 ### Setup
 
@@ -132,7 +133,8 @@ copy .env.local.example .env.local
 Open `.env.local` and fill in your key:
 
 ```env
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+OPENROUTER_API_KEY=optional-openrouter-fallback-key
 ```
 
 ```bash
@@ -194,7 +196,8 @@ src/
 2. Go to [vercel.com](https://vercel.com) → **Add New Project** → Import your repo
 3. Under **Environment Variables**, add:
    ```
-   OPENROUTER_API_KEY = sk-or-v1-your-key-here
+   GEMINI_API_KEY = your-gemini-api-key-here
+   OPENROUTER_API_KEY = optional-openrouter-fallback-key
    ```
 4. Click **Deploy** — no config changes needed, Vercel auto-detects Next.js
 

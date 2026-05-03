@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }));
 
     return NextResponse.json(topResults);
-  } catch (error) {
+  } catch {
     try {
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
       const response = await fetch(rssUrl);
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       });
 
       return NextResponse.json(fallbackResults);
-    } catch (fallbackError) {
+    } catch {
       return NextResponse.json([], { 
         status: 200, 
         headers: { "X-Search-Status": "Service degradation; fallback failed" } 

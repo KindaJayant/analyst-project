@@ -14,32 +14,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const encoder = new TextEncoder();
+    const messages = [];
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const message of runAgentLoop(company, origin)) {
-            const line = JSON.stringify(message) + "\n";
-            controller.enqueue(encoder.encode(line));
-          }
-        } catch (error) {
-          const errorMessage = JSON.stringify({
-            type: "error",
-            error: `Agent error: ${error instanceof Error ? error.message : String(error)}`,
-          });
-          controller.enqueue(encoder.encode(errorMessage + "\n"));
-        } finally {
-          controller.close();
-        }
-      },
-    });
+    try {
+      for await (const message of runAgentLoop(company, origin)) {
+        messages.push(message);
+      }
+    } catch (error) {
+      messages.push({
+        type: "error",
+        error: `Agent error: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
 
-    return new Response(stream, {
+    return new Response(JSON.stringify({ messages }), {
       headers: {
-        "Content-Type": "application/x-ndjson",
+        "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        Connection: "keep-alive",
       },
     });
   } catch (error) {

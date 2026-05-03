@@ -10,6 +10,42 @@ interface ReportPageProps {
   params: Promise<{ company: string }>;
 }
 
+function parseAgentMessages(rawPayload: string): AgentMessage[] {
+  const trimmed = rawPayload.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      messages?: AgentMessage[];
+      type?: AgentMessage["type"];
+    };
+
+    if (Array.isArray(parsed.messages)) {
+      return parsed.messages;
+    }
+
+    if (parsed.type) {
+      return [parsed as AgentMessage];
+    }
+  } catch {
+    // Fall through to NDJSON parsing.
+  }
+
+  return trimmed
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        return [JSON.parse(line) as AgentMessage];
+      } catch {
+        return [];
+      }
+    });
+}
+
 export default function ReportPage({ params }: ReportPageProps) {
   const { company } = use(params);
   const decodedCompany = decodeURIComponent(company);
@@ -37,37 +73,29 @@ export default function ReportPage({ params }: ReportPageProps) {
           throw new Error(`System returned status ${response.status}`);
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("Connection failed");
+        const rawPayload = await response.text();
+        const messages = parseAgentMessages(rawPayload);
+        const nextSteps: AgentStep[] = [];
+        let nextReport: ResearchReport | null = null;
+        let nextError: string | null = null;
 
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            try {
-              const message: AgentMessage = JSON.parse(line);
-
-              if (message.type === "step" && message.step) {
-                setSteps((prev) => [...prev, message.step!]);
-              } else if (message.type === "report" && message.report) {
-                setReport(message.report);
-              } else if (message.type === "error") {
-                setError(message.error || "Process interrupted");
-              }
-            } catch {
-              // Skip invalid JSON lines
-            }
+        for (const message of messages) {
+          if (message.type === "step" && message.step) {
+            nextSteps.push(message.step);
+          } else if (message.type === "report" && message.report) {
+            nextReport = message.report;
+          } else if (message.type === "error") {
+            nextError = message.error || "Process interrupted";
           }
         }
+
+        if (!messages.length) {
+          throw new Error("The analysis service returned an empty response.");
+        }
+
+        setSteps(nextSteps);
+        setReport(nextReport);
+        setError(nextError);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "System failure"
